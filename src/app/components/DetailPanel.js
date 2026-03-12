@@ -6,11 +6,8 @@ import { BUNDESLAENDER, PHASEN, GROESSEN, FOERDERARTEN, formatEuro } from '@/lib
 export default function DetailPanel({ programm, onClose }) {
   const panelRef = useRef(null);
 
-  // ESC zum Schließen
   useEffect(() => {
-    function handleKey(e) {
-      if (e.key === 'Escape') onClose();
-    }
+    function handleKey(e) { if (e.key === 'Escape') onClose(); }
     document.addEventListener('keydown', handleKey);
     document.body.style.overflow = 'hidden';
     return () => {
@@ -27,27 +24,17 @@ export default function DetailPanel({ programm, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 animate-fade-in" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)' }} onClick={onClose} />
 
       {/* Panel */}
-      <div
-        ref={panelRef}
-        className="relative w-full max-w-lg bg-white shadow-2xl overflow-y-auto animate-slide-in"
-      >
-        {/* Sticky Header */}
-        <div className="sticky top-0 z-10 bg-white border-b border-stone-200 px-5 py-4 flex items-center justify-between">
-          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium badge-${programm.foerderart}`}>
+      <div ref={panelRef} className="relative w-full max-w-lg overflow-y-auto animate-slide-in" style={{ background: 'var(--bg-secondary)', boxShadow: '-20px 0 60px -12px rgba(0,0,0,0.5)' }}>
+        {/* Header */}
+        <div className="sticky top-0 z-10 px-5 py-4 flex items-center justify-between" style={{ background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-default)' }}>
+          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium badge-${programm.foerderart}`}>
             {art.emoji} {art.label}
           </span>
-          <button
-            onClick={onClose}
-            className="p-2 -mr-2 rounded-lg hover:bg-stone-100 transition-colors"
-            aria-label="Schließen"
-          >
-            <svg className="w-5 h-5 text-stone-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <button onClick={onClose} className="p-2 -mr-2 rounded-xl transition-colors" style={{ color: 'var(--text-muted)' }} aria-label="Schließen">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -55,57 +42,46 @@ export default function DetailPanel({ programm, onClose }) {
 
         {/* Content */}
         <div className="px-5 py-6 space-y-6">
-          {/* Titel */}
           <div>
             {programm.kurzname && programm.kurzname !== programm.name && (
-              <p className="text-sm font-semibold text-green-700 mb-1">{programm.kurzname}</p>
+              <p className="text-sm font-semibold mb-1 gradient-text">{programm.kurzname}</p>
             )}
-            <h2 className="text-xl font-bold text-stone-900 leading-snug">
-              {programm.name}
-            </h2>
-            <p className="text-sm text-stone-500 mt-1.5">{programm.foerdergeber}</p>
+            <h2 className="text-xl font-bold leading-snug" style={{ color: 'var(--text-primary)' }}>{programm.name}</h2>
+            <p className="text-sm mt-1.5" style={{ color: 'var(--text-muted)' }}>{programm.foerdergeber}</p>
           </div>
 
-          {/* Fördervolumen */}
+          {/* Funding amount */}
           {hasVolumen && (
-            <div className="bg-green-50 border border-green-100 rounded-xl p-4">
-              <p className="text-xs font-medium text-green-600 mb-1">Förderhöhe</p>
-              <p className="text-2xl font-bold text-green-800">
+            <div className="rounded-2xl p-4" style={{ background: 'var(--accent-muted)', border: '1px solid rgba(52,211,153,0.15)' }}>
+              <p className="text-xs font-medium mb-1" style={{ color: 'var(--accent-text)' }}>Förderhöhe</p>
+              <p className="text-2xl font-bold" style={{ color: 'var(--accent-text)' }}>
                 {programm.volumen_min_eur === programm.volumen_max_eur
                   ? formatEuro(programm.volumen_max_eur)
-                  : `${formatEuro(programm.volumen_min_eur)} – ${formatEuro(programm.volumen_max_eur)}`
-                }
+                  : `${formatEuro(programm.volumen_min_eur)} – ${formatEuro(programm.volumen_max_eur)}`}
               </p>
               {programm.eigenanteil_prozent > 0 && (
-                <p className="text-xs text-green-600 mt-1">
-                  Eigenanteil: {programm.eigenanteil_prozent}%
-                </p>
+                <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>Eigenanteil: {programm.eigenanteil_prozent}%</p>
               )}
             </div>
           )}
 
-          {/* Beschreibung */}
+          {/* Description */}
           {programm.beschreibung && (
             <div>
-              <h3 className="text-sm font-semibold text-stone-800 mb-2">Beschreibung</h3>
-              <p className="text-sm text-stone-600 leading-relaxed">
-                {programm.beschreibung}
-              </p>
+              <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Beschreibung</h3>
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{programm.beschreibung}</p>
             </div>
           )}
 
-          {/* Details Grid */}
-          <div className="grid grid-cols-2 gap-4">
-            {/* Förderart */}
-            <div className="bg-stone-50 rounded-lg p-3">
-              <p className="text-xs text-stone-500 mb-0.5">Förderart</p>
-              <p className="text-sm font-medium text-stone-800">{art.emoji} {art.label}</p>
+          {/* Details */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-xl p-3" style={{ background: 'var(--bg-elevated)' }}>
+              <p className="text-xs mb-0.5" style={{ color: 'var(--text-muted)' }}>Förderart</p>
+              <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{art.emoji} {art.label}</p>
             </div>
-
-            {/* Eigenanteil */}
-            <div className="bg-stone-50 rounded-lg p-3">
-              <p className="text-xs text-stone-500 mb-0.5">Eigenanteil</p>
-              <p className="text-sm font-medium text-stone-800">
+            <div className="rounded-xl p-3" style={{ background: 'var(--bg-elevated)' }}>
+              <p className="text-xs mb-0.5" style={{ color: 'var(--text-muted)' }}>Eigenanteil</p>
+              <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
                 {programm.eigenanteil_prozent > 0 ? `${programm.eigenanteil_prozent}%` : 'Keiner'}
               </p>
             </div>
@@ -114,10 +90,10 @@ export default function DetailPanel({ programm, onClose }) {
           {/* Bundesländer */}
           {programm.bundeslaender?.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-stone-800 mb-2">Fördergebiet</h3>
+              <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Fördergebiet</h3>
               <div className="flex flex-wrap gap-1.5">
                 {programm.bundeslaender.map(bl => (
-                  <span key={bl} className="text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md font-medium">
+                  <span key={bl} className="text-xs px-2.5 py-1 rounded-lg font-medium" style={{ background: 'var(--violet-muted)', color: 'var(--violet-accent)' }}>
                     {bl === 'BUND' ? 'Bundesweit' : (BUNDESLAENDER[bl] || bl)}
                   </span>
                 ))}
@@ -128,10 +104,10 @@ export default function DetailPanel({ programm, onClose }) {
           {/* Phasen */}
           {programm.phasen?.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-stone-800 mb-2">Geeignete Unternehmensphasen</h3>
+              <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Geeignete Phasen</h3>
               <div className="flex flex-wrap gap-1.5">
                 {programm.phasen.map(ph => (
-                  <span key={ph} className="text-xs bg-amber-50 text-amber-700 px-2.5 py-1 rounded-md font-medium">
+                  <span key={ph} className="text-xs px-2.5 py-1 rounded-lg font-medium" style={{ background: 'rgba(251, 191, 36, 0.1)', color: '#fbbf24' }}>
                     {PHASEN[ph] || ph}
                   </span>
                 ))}
@@ -142,10 +118,10 @@ export default function DetailPanel({ programm, onClose }) {
           {/* Größen */}
           {programm.groessen?.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-stone-800 mb-2">Unternehmensgrößen</h3>
+              <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Unternehmensgrößen</h3>
               <div className="flex flex-wrap gap-1.5">
                 {programm.groessen.map(gr => (
-                  <span key={gr} className="text-xs bg-purple-50 text-purple-700 px-2.5 py-1 rounded-md font-medium">
+                  <span key={gr} className="text-xs px-2.5 py-1 rounded-lg font-medium" style={{ background: 'rgba(244, 114, 182, 0.1)', color: '#f472b6' }}>
                     {GROESSEN[gr] || gr}
                   </span>
                 ))}
@@ -156,10 +132,10 @@ export default function DetailPanel({ programm, onClose }) {
           {/* Branchen */}
           {programm.branchen?.length > 0 && (
             <div>
-              <h3 className="text-sm font-semibold text-stone-800 mb-2">Branchen</h3>
+              <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Branchen</h3>
               <div className="flex flex-wrap gap-1.5">
                 {programm.branchen.map(br => (
-                  <span key={br.slug || br.name} className="text-xs bg-stone-100 text-stone-600 px-2.5 py-1 rounded-md">
+                  <span key={br.slug || br.name} className="text-xs px-2.5 py-1 rounded-lg" style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)' }}>
                     {br.name}
                   </span>
                 ))}
@@ -167,23 +143,17 @@ export default function DetailPanel({ programm, onClose }) {
             </div>
           )}
 
-          {/* Datenstand */}
           {programm.aktualisiert_am && (
-            <p className="text-xs text-stone-400">
-              Datenstand: {programm.aktualisiert_am}
-            </p>
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Datenstand: {programm.aktualisiert_am}</p>
           )}
         </div>
 
-        {/* Sticky Footer: Action Buttons */}
-        <div className="sticky bottom-0 bg-white border-t border-stone-200 px-5 py-4 flex gap-3">
+        {/* Footer buttons */}
+        <div className="sticky bottom-0 px-5 py-4 flex gap-3" style={{ background: 'var(--bg-secondary)', borderTop: '1px solid var(--border-default)' }}>
           {programm.url_antrag && (
-            <a
-              href={programm.url_antrag}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-green-700 hover:bg-green-800 text-white text-sm font-medium rounded-lg transition-colors"
-            >
+            <a href={programm.url_antrag} target="_blank" rel="noopener noreferrer"
+              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl transition-all"
+              style={{ background: 'linear-gradient(135deg, var(--accent-start), var(--accent-end))', color: '#0f0f13' }}>
               Zum Antrag
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -191,17 +161,10 @@ export default function DetailPanel({ programm, onClose }) {
             </a>
           )}
           {programm.url_quelle && (
-            <a
-              href={programm.url_quelle}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 text-sm font-medium rounded-lg transition-colors"
-            >
+            <a href={programm.url_quelle} target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl transition-all"
+              style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', color: 'var(--text-secondary)' }}>
               Quelle
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 10-5.656-5.656l-1.102 1.101" />
-              </svg>
             </a>
           )}
         </div>

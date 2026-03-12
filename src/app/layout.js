@@ -28,7 +28,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="de" className={ibmPlexSans.variable} suppressHydrationWarning>
-      <body className="min-h-screen bg-stone-50 antialiased">
+      <body className="min-h-screen antialiased noise-bg" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
         <ErrorBoundary>
           {children}
         </ErrorBoundary>

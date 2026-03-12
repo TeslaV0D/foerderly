@@ -18,9 +18,7 @@ const BRANCHEN_OPTIONS = [
   { slug: 'bildung', label: 'Bildung' },
 ];
 
-const selectClass = "w-full rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-stone-900 text-sm appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23999%22%20stroke-width%3D%222%22%3E%3Cpath%20d%3D%22M6%209l6%206%206-6%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[right_0.75rem_center]";
-
-export default function FilterBar({ filters, onChange, onSearch, loading, resultCount }) {
+export default function FilterBar({ filters, onChange, onSearch, loading }) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const activeFilterCount = Object.entries(filters).filter(([k, v]) => v && k !== 'q').length;
 
@@ -29,9 +27,9 @@ export default function FilterBar({ filters, onChange, onSearch, loading, result
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
-      {/* Suchfeld – immer sichtbar */}
-      <div className="p-4 sm:p-6">
+    <div className="rounded-2xl overflow-hidden glow-accent" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)' }}>
+      {/* Search field */}
+      <div className="p-4 sm:p-5">
         <div className="flex gap-2 sm:gap-3">
           <input
             type="text"
@@ -39,12 +37,17 @@ export default function FilterBar({ filters, onChange, onSearch, loading, result
             onChange={(e) => handleChange('q', e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && onSearch()}
             placeholder="Förderprogramm suchen..."
-            className="flex-1 rounded-lg border border-stone-300 bg-white px-3.5 py-2.5 text-stone-900 text-sm placeholder:text-stone-400"
+            className="flex-1 px-4 py-2.5 text-sm"
+            style={{ '::placeholder': { color: 'var(--text-muted)' } }}
           />
           <button
             onClick={onSearch}
             disabled={loading}
-            className="px-4 sm:px-6 py-2.5 bg-green-700 hover:bg-green-800 disabled:bg-stone-400 text-white font-medium text-sm rounded-lg transition-colors shrink-0"
+            className="px-5 sm:px-6 py-2.5 font-medium text-sm rounded-xl transition-all shrink-0 disabled:opacity-50"
+            style={{
+              background: 'linear-gradient(135deg, var(--accent-start), var(--accent-end))',
+              color: '#0f0f13',
+            }}
           >
             {loading ? (
               <svg className="animate-spin h-4 w-4 mx-1" viewBox="0 0 24 24">
@@ -62,10 +65,11 @@ export default function FilterBar({ filters, onChange, onSearch, loading, result
           </button>
         </div>
 
-        {/* Filter-Toggle für Mobile */}
+        {/* Mobile filter toggle */}
         <button
           onClick={() => setFiltersOpen(!filtersOpen)}
-          className="mt-3 flex items-center gap-2 text-sm text-stone-600 hover:text-stone-800 transition-colors sm:hidden"
+          className="mt-3 flex items-center gap-2 text-sm transition-colors sm:hidden"
+          style={{ color: 'var(--text-secondary)' }}
         >
           <svg className={`w-4 h-4 transition-transform ${filtersOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -74,58 +78,42 @@ export default function FilterBar({ filters, onChange, onSearch, loading, result
         </button>
       </div>
 
-      {/* Filter – auf Mobile collapsible, auf Desktop immer sichtbar */}
-      <div className={`border-t border-stone-100 px-4 sm:px-6 pb-4 sm:pb-6 pt-4 ${filtersOpen ? 'block' : 'hidden'} sm:block`}>
+      {/* Filters */}
+      <div
+        className={`px-4 sm:px-5 pb-4 sm:pb-5 pt-4 ${filtersOpen ? 'block' : 'hidden'} sm:block`}
+        style={{ borderTop: '1px solid var(--border-subtle)' }}
+      >
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <div>
-            <label className="block text-xs font-medium text-stone-500 mb-1">Bundesland</label>
-            <select
-              value={filters.bundesland}
-              onChange={(e) => handleChange('bundesland', e.target.value)}
-              className={selectClass}
-            >
+            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>Bundesland</label>
+            <select value={filters.bundesland} onChange={(e) => handleChange('bundesland', e.target.value)} className="w-full px-3 py-2.5 text-sm">
               <option value="">Alle</option>
               {Object.entries(BUNDESLAENDER).map(([key, name]) => (
                 <option key={key} value={key}>{name}</option>
               ))}
             </select>
           </div>
-
           <div>
-            <label className="block text-xs font-medium text-stone-500 mb-1">Phase</label>
-            <select
-              value={filters.phase}
-              onChange={(e) => handleChange('phase', e.target.value)}
-              className={selectClass}
-            >
+            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>Phase</label>
+            <select value={filters.phase} onChange={(e) => handleChange('phase', e.target.value)} className="w-full px-3 py-2.5 text-sm">
               <option value="">Alle Phasen</option>
               {Object.entries(PHASEN).map(([key, label]) => (
                 <option key={key} value={key}>{label}</option>
               ))}
             </select>
           </div>
-
           <div>
-            <label className="block text-xs font-medium text-stone-500 mb-1">Größe</label>
-            <select
-              value={filters.groesse}
-              onChange={(e) => handleChange('groesse', e.target.value)}
-              className={selectClass}
-            >
+            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>Größe</label>
+            <select value={filters.groesse} onChange={(e) => handleChange('groesse', e.target.value)} className="w-full px-3 py-2.5 text-sm">
               <option value="">Alle Größen</option>
               {Object.entries(GROESSEN).map(([key, label]) => (
                 <option key={key} value={key}>{label}</option>
               ))}
             </select>
           </div>
-
           <div>
-            <label className="block text-xs font-medium text-stone-500 mb-1">Branche</label>
-            <select
-              value={filters.branche}
-              onChange={(e) => handleChange('branche', e.target.value)}
-              className={selectClass}
-            >
+            <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>Branche</label>
+            <select value={filters.branche} onChange={(e) => handleChange('branche', e.target.value)} className="w-full px-3 py-2.5 text-sm">
               {BRANCHEN_OPTIONS.map(({ slug, label }) => (
                 <option key={slug} value={slug}>{label}</option>
               ))}
@@ -133,10 +121,10 @@ export default function FilterBar({ filters, onChange, onSearch, loading, result
           </div>
         </div>
 
-        {/* Quick-Apply auf Mobile */}
         <button
           onClick={() => { onSearch(); setFiltersOpen(false); }}
-          className="mt-3 w-full py-2.5 bg-green-700 text-white text-sm font-medium rounded-lg sm:hidden"
+          className="mt-3 w-full py-2.5 text-sm font-medium rounded-xl sm:hidden"
+          style={{ background: 'linear-gradient(135deg, var(--accent-start), var(--accent-end))', color: '#0f0f13' }}
         >
           Filter anwenden
         </button>
