@@ -329,7 +329,8 @@ def run_scraper(laender, max_per_land, max_total):
         print(f"\n📍 {land.upper()}")
         print("─" * 40)
 
-        pages_needed = (max_per_land // 10) + 1
+        # Scrape all available pages (stop when no more results)
+        pages_needed = 999
         entries = scrape_list(session, land, max_pages=pages_needed)
         entries = entries[:max_per_land]
 
@@ -477,8 +478,8 @@ def main():
     ap = argparse.ArgumentParser(description="Förderly Scraper v3.0")
     ap.add_argument("--test", action="store_true", help="Testlauf: Bayern, 5 Programme")
     ap.add_argument("--land", type=str, help="Nur ein Bundesland (z.B. bayern)")
-    ap.add_argument("--max", type=int, default=2000, help="Max Programme gesamt")
-    ap.add_argument("--max-per-land", type=int, default=100, help="Max pro Land")
+    ap.add_argument("--max", type=int, default=99999, help="Max Programme gesamt")
+    ap.add_argument("--max-per-land", type=int, default=99999, help="Max pro Land")
     ap.add_argument("--alle", action="store_true", help="Alles scrapen")
     ap.add_argument("--json-only", action="store_true", help="Nur JSON, kein Supabase")
     ap.add_argument("--json-backup", action="store_true", help="Zusätzlich JSON-Backup")

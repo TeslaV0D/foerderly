@@ -5,17 +5,23 @@ on:
     # Mo + Do um 4:00 CET (= 3:00 UTC)
     - cron: '0 3 * * 1,4'
   workflow_dispatch:
-    # Manuell auslösbar über GitHub UI
     inputs:
       max_programmes:
         description: 'Max Programme gesamt'
         required: false
-        default: '2000'
+        default: '5000'
+      max_per_land:
+        description: 'Max pro Bundesland'
+        required: false
+        default: '500'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 120
 
     steps:
       - name: Checkout
@@ -34,10 +40,7 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: |
-          python scraper.py --alle \
-            --max-per-land 100 \
-            --max ${{ github.event.inputs.max_programmes || '2000' }} \
-            --json-backup
+          python scraper.py --alle --json-backup
 
       - name: Upload JSON Backup
         if: always()
