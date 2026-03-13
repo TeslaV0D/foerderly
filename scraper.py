@@ -218,7 +218,11 @@ def collect_all_urls(session):
             forward = soup.select_one("a.forward.button")
             if forward and forward.get("href"):
                 fwd_href = forward["href"]
-                next_url = fwd_href if fwd_href.startswith("http") else BASE + fwd_href
+                if fwd_href.startswith("http"):
+                    next_url = fwd_href
+                else:
+                    # Ensure proper joining with slash
+                    next_url = BASE + "/" + fwd_href.lstrip("/")
             else:
                 log(f"Letzte Seite erreicht (Seite {page_num}).")
                 break
