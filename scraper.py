@@ -133,8 +133,8 @@ def fetch(session, url, params=None, delay=DELAY_LIST):
 def collect_all_urls(session):
     """
     Scrapt alle Bundesländer und sammelt einzigartige Programme-URLs.
+    Folgt dem Forward-Button für korrekte Paginierung.
     Stoppt pro Land sobald nur noch Duplikate kommen.
-    Gibt dict zurück: {url: {"name": ..., "meta": ..., "bundeslaender": [...]}}
     """
     all_programmes = {}  # url → {name, meta, bundeslaender}
     
@@ -142,22 +142,24 @@ def collect_all_urls(session):
         bl = BL_SHORT[land_key]
         new_in_land = 0
         dupes_in_land = 0
-        page = 0
+        page_num = 0
         consecutive_dupe_pages = 0
         
         print(f"\n📍 {land_key.upper()} ({bl})")
         print("─" * 40)
         
-        while True:
-            params = {
-                "submit": "Suchen",
-                "filterCategories": "FundingProgram",
-                "cl2Processes_Foerdergebiet": land_param,
-            }
-            if page > 0:
-                params["pageNo"] = page
+        # First page URL with params
+        next_url = BASE + SEARCH
+        next_params = {
+            "submit": "Suchen",
+            "filterCategories": "FundingProgram",
+            "cl2Processes_Foerdergebiet": land_param,
+        }
+        
+        while next_url:
+            soup = fetch(session, next_url, next_params)
+            next_params = None  # Only use params for first request
             
-            soup = fetch(session, BASE + SEARCH, params)
             if not soup:
                 break
             
@@ -166,7 +168,9 @@ def collect_all_urls(session):
                 log("Keine Ergebnisse mehr.")
                 break
             
+            page_num += 1
             page_new = 0
+            
             for card in cards:
                 a = card.select_one("p.card--title a[href]")
                 if not a:
@@ -178,7 +182,6 @@ def collect_all_urls(session):
                 url = href if href.startswith("http") else BASE + "/" + href.lstrip("/")
                 name = a.get_text(strip=True)
                 
-                # Extract meta from list card
                 meta = {}
                 for dt in card.select("dt"):
                     dd = dt.find_next_sibling("dd")
@@ -186,12 +189,10 @@ def collect_all_urls(session):
                         meta[dt.get_text(strip=True).rstrip(":")] = dd.get_text(strip=True)
                 
                 if url in all_programmes:
-                    # Already seen – just add this Bundesland
                     if bl not in all_programmes[url]["bundeslaender"]:
                         all_programmes[url]["bundeslaender"].append(bl)
                     dupes_in_land += 1
                 else:
-                    # New programme
                     all_programmes[url] = {
                         "name": name,
                         "meta": meta,
@@ -209,18 +210,20 @@ def collect_all_urls(session):
             else:
                 consecutive_dupe_pages = 0
             
-            page += 1
+            # Progress log
+            if page_num % 20 == 0:
+                log(f"Seite {page_num} | {new_in_land} neu, {dupes_in_land} Duplikate | Gesamt: {len(all_programmes)}")
             
-            # Safety: log progress every 10 pages
-            if page % 10 == 0:
-                log(f"Seite {page + 1} | {new_in_land} neu, {dupes_in_land} Duplikate")
-            
-            # Check for next page button
-            if not soup.select_one("a.forward.button"):
-                log("Letzte Seite erreicht.")
+            # Find forward/next button and follow its href
+            forward = soup.select_one("a.forward.button")
+            if forward and forward.get("href"):
+                fwd_href = forward["href"]
+                next_url = fwd_href if fwd_href.startswith("http") else BASE + fwd_href
+            else:
+                log(f"Letzte Seite erreicht (Seite {page_num}).")
                 break
         
-        print(f"  ✅ {new_in_land} neue, {dupes_in_land} Duplikate | Gesamt: {len(all_programmes)}")
+        print(f"  ✅ {new_in_land} neue, {dupes_in_land} Duplikate ({page_num} Seiten) | Gesamt: {len(all_programmes)}")
     
     return all_programmes
 
