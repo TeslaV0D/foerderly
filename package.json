@@ -6,9 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "seed": "node src/lib/seed.mjs"
+    "seed": "node src/lib/seed.mjs",
+    "migrate": "node supabase/migrate.mjs"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.99.1",
     "lucide-react": "^0.383.0",
     "next": "^15.3.3",
     "react": "^18.3.0",

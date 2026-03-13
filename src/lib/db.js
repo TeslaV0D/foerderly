@@ -1,24 +1,90 @@
+import { supabase } from './supabase';
 import fs from 'fs';
 import path from 'path';
 
+// ─── JSON Fallback ───
 const DATA_PATH = path.join(process.cwd(), 'data', 'foerderprogramme.json');
+let _jsonCache = null;
 
-let _cache = null;
-
-function loadData() {
-  if (_cache) return _cache;
+function loadJsonData() {
+  if (_jsonCache) return _jsonCache;
   try {
     const raw = fs.readFileSync(DATA_PATH, 'utf-8');
-    _cache = JSON.parse(raw);
-    return _cache;
-  } catch (err) {
-    console.error('Daten nicht gefunden. Bitte "npm run seed" ausführen.', err.message);
+    _jsonCache = JSON.parse(raw);
+    return _jsonCache;
+  } catch {
     return { programme: [], branchen: [] };
   }
 }
 
-export function sucheForederungen({ bundesland, phase, groesse, branche, suchbegriff, page = 1, limit = 20 }) {
-  const data = loadData();
+// ─── Supabase Query ───
+async function searchSupabase({ bundesland, phase, groesse, branche, foerderart, suchbegriff, sortBy, sortDir, page = 1, limit = 20 }) {
+  let query = supabase
+    .from('programme')
+    .select('*', { count: 'exact' })
+    .eq('aktiv', true)
+    .eq('status', 'aktiv');
+
+  // Filters
+  if (bundesland) {
+    query = query.or(`bundeslaender.cs.{${bundesland}},bundeslaender.cs.{BUND}`);
+  }
+  if (phase) {
+    query = query.contains('phasen', [phase]);
+  }
+  if (groesse) {
+    query = query.contains('groessen', [groesse]);
+  }
+  if (branche) {
+    // Search in JSONB array: any object where slug matches
+    query = query.or(`branchen.cs.[{"slug":"${branche}"}],branchen.cs.[{"slug":"branchenuebergreifend"}]`);
+  }
+  if (foerderart) {
+    query = query.eq('foerderart', foerderart);
+  }
+  if (suchbegriff) {
+    // Use PostgreSQL full-text search
+    const tsQuery = suchbegriff.split(/\s+/).filter(Boolean).join(' & ');
+    query = query.textSearch('fts', tsQuery, { config: 'german' });
+  }
+
+  // Sorting
+  const validSorts = {
+    'volumen_desc': { column: 'volumen_max_eur', ascending: false },
+    'volumen_asc': { column: 'volumen_max_eur', ascending: true },
+    'name_asc': { column: 'name', ascending: true },
+    'aktualisiert_desc': { column: 'aktualisiert_am', ascending: false },
+    'aktualisiert_asc': { column: 'aktualisiert_am', ascending: true },
+  };
+
+  const sortKey = sortBy && sortDir ? `${sortBy}_${sortDir}` : null;
+  const sort = validSorts[sortKey];
+
+  if (sort) {
+    query = query.order(sort.column, { ascending: sort.ascending, nullsFirst: false });
+  } else {
+    // Default: Bundesland-spezifische zuerst, dann nach Name
+    query = query.order('volumen_max_eur', { ascending: false, nullsFirst: true });
+  }
+
+  // Pagination
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
+  query = query.range(from, to);
+
+  const { data, count, error } = await query;
+
+  if (error) {
+    console.error('[Supabase] Query error:', error.message);
+    throw error;
+  }
+
+  return { ergebnisse: data || [], total: count || 0 };
+}
+
+// ─── JSON Fallback Query ───
+function searchJson({ bundesland, phase, groesse, branche, foerderart, suchbegriff, page = 1, limit = 20 }) {
+  const data = loadJsonData();
   let results = data.programme.filter(p => p.aktiv && p.status === 'aktiv');
 
   if (bundesland) {
@@ -28,26 +94,25 @@ export function sucheForederungen({ bundesland, phase, groesse, branche, suchbeg
       p.bundeslaender.includes('EU')
     );
   }
-
   if (phase) {
     results = results.filter(p => p.phasen.includes(phase));
   }
-
   if (groesse) {
     results = results.filter(p => p.groessen.includes(groesse));
   }
-
   if (branche) {
     results = results.filter(p =>
       p.branchen.some(b => b.slug === branche || b.slug === 'branchenuebergreifend')
     );
   }
-
+  if (foerderart) {
+    results = results.filter(p => p.foerderart === foerderart);
+  }
   if (suchbegriff) {
     const q = suchbegriff.toLowerCase();
     results = results.filter(p =>
       p.name.toLowerCase().includes(q) ||
-      p.beschreibung.toLowerCase().includes(q) ||
+      p.beschreibung?.toLowerCase().includes(q) ||
       (p.kurzname && p.kurzname.toLowerCase().includes(q))
     );
   }
@@ -67,27 +132,45 @@ export function sucheForederungen({ bundesland, phase, groesse, branche, suchbeg
   return { ergebnisse: paged, total };
 }
 
-export function getProgrammById(id) {
-  const data = loadData();
-  return data.programme.find(p => p.id === id) || null;
+// ─── Public API ───
+export async function sucheForederungen(filters) {
+  // Try Supabase first, fall back to JSON
+  if (supabase) {
+    try {
+      return await searchSupabase(filters);
+    } catch (err) {
+      console.warn('[DB] Supabase failed, falling back to JSON:', err.message);
+      return searchJson(filters);
+    }
+  }
+  return searchJson(filters);
 }
 
-export function getMeta() {
-  const data = loadData();
-  const branchen = data.branchen || [];
-  const total = data.programme.filter(p => p.aktiv && p.status === 'aktiv').length;
+export async function getMeta() {
+  if (supabase) {
+    try {
+      // Get branchen from table
+      const { data: branchen } = await supabase
+        .from('branchen')
+        .select('*')
+        .order('name');
 
-  const blCounts = {};
-  data.programme.forEach(p => {
-    if (!p.aktiv || p.status !== 'aktiv') return;
-    p.bundeslaender.forEach(bl => {
-      blCounts[bl] = (blCounts[bl] || 0) + 1;
-    });
-  });
+      // Get total count
+      const { count: total } = await supabase
+        .from('programme')
+        .select('*', { count: 'exact', head: true })
+        .eq('aktiv', true)
+        .eq('status', 'aktiv');
 
-  const bundeslaender_counts = Object.entries(blCounts).map(([bundesland, anzahl]) => ({
-    bundesland, anzahl,
-  }));
+      return { branchen: branchen || [], total: total || 0 };
+    } catch {
+      // Fallback
+    }
+  }
 
-  return { branchen, bundeslaender_counts, total };
+  const data = loadJsonData();
+  return {
+    branchen: data.branchen || [],
+    total: data.programme.filter(p => p.aktiv && p.status === 'aktiv').length,
+  };
 }

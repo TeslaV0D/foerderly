@@ -31,7 +31,7 @@ export async function GET(request) {
     // Input-Validierung: Whitelist-basiert
     const filters = sanitizeFilters(searchParams);
 
-    const { ergebnisse, total } = sucheForederungen(filters);
+    const { ergebnisse, total } = await sucheForederungen(filters);
 
     // URL-Validierung: nur erlaubte Domains in der Ausgabe
     const safeErgebnisse = ergebnisse.map(p => ({
