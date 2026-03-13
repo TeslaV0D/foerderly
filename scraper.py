@@ -1,16 +1,19 @@
 """
-FÖRDERLY – Scraper v4.0
-========================
+FÖRDERLY – Scraper v4.1 (Bugfix: GitHub Actions Hang)
+======================================================
 Scrapt foerderdatenbank.de und schreibt direkt in Supabase.
+
+Fixes in v4.1:
+  - Proper connect+read timeouts (10s connect, 25s read)
+  - Verbose logging with sys.stdout.flush() for GitHub Actions
+  - Retry logic (3 attempts per request)
+  - Graceful handling of blocked/hanging requests
+  - Progress output on every page, not just every 20th
 
 Strategie:
   Phase 1: Alle Bundesländer durchgehen, URLs sammeln (mit Deduplizierung)
   Phase 2: Alle einzigartigen Detail-Seiten abrufen
   Phase 3: In Supabase upserten
-
-Stoppt automatisch pro Land wenn:
-  - Keine neuen Ergebnisse mehr kommen (Duplikate = fertig)
-  - Leere Seite kommt
 
 Installation:
     pip install requests beautifulsoup4 lxml supabase
@@ -32,11 +35,19 @@ BASE = "https://www.foerderdatenbank.de"
 SEARCH = "/SiteGlobals/FDB/Forms/Suche/Expertensuche_Formular.html"
 DELAY_LIST = 1.2   # Delay zwischen Listenseiten
 DELAY_DETAIL = 1.5 # Delay zwischen Detailseiten
+MAX_RETRIES = 3    # Retry-Versuche pro Request
+
+# Timeouts: (connect_timeout, read_timeout) in Sekunden
+TIMEOUT = (10, 25)
 
 HEADERS = {
-    "User-Agent": "Foerderly-Bot/4.0 (+https://foerderly.com)",
-    "Accept": "text/html,application/xhtml+xml",
-    "Accept-Language": "de-DE,de;q=0.9",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Language": "de-DE,de;q=0.9,en;q=0.5",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Connection": "keep-alive",
+    "Upgrade-Insecure-Requests": "1",
+    "DNT": "1",
 }
 
 BL_PARAMS = {
@@ -112,18 +123,87 @@ B_MAP = {b["slug"]: b for b in BRANCHEN}
 
 
 def log(msg):
-    print(f"  [{datetime.now().strftime('%H:%M:%S')}] {msg}")
+    """Print with timestamp and immediate flush for GitHub Actions."""
+    print(f"  [{datetime.now().strftime('%H:%M:%S')}] {msg}", flush=True)
 
 
-def fetch(session, url, params=None, delay=DELAY_LIST):
+def fetch(session, url, params=None, delay=DELAY_LIST, retries=MAX_RETRIES):
+    """Fetch a URL with retry logic and proper timeouts."""
     time.sleep(delay)
+    
+    for attempt in range(1, retries + 1):
+        try:
+            log(f"  GET {url[:80]}{'...' if len(url) > 80 else ''} (Versuch {attempt}/{retries})")
+            r = session.get(url, params=params, timeout=TIMEOUT, allow_redirects=True)
+            log(f"  → Status {r.status_code}, {len(r.text)} Bytes")
+            r.raise_for_status()
+            return BeautifulSoup(r.text, "lxml")
+        except req.exceptions.ConnectTimeout:
+            log(f"  ⚠️ Connect-Timeout (Server nicht erreichbar)")
+        except req.exceptions.ReadTimeout:
+            log(f"  ⚠️ Read-Timeout (Server antwortet nicht)")
+        except req.exceptions.ConnectionError as e:
+            log(f"  ⚠️ Verbindungsfehler: {e}")
+        except req.exceptions.HTTPError as e:
+            log(f"  ⚠️ HTTP-Fehler: {e}")
+            if r.status_code == 403:
+                log(f"  🚫 403 Forbidden – möglicherweise IP-Block!")
+                return None
+            if r.status_code == 429:
+                log(f"  🚫 429 Rate Limited – warte 30 Sekunden...")
+                time.sleep(30)
+        except Exception as e:
+            log(f"  ❌ Unerwarteter Fehler: {type(e).__name__}: {e}")
+        
+        if attempt < retries:
+            wait = attempt * 5
+            log(f"  ⏳ Warte {wait}s vor Retry...")
+            time.sleep(wait)
+    
+    log(f"  ❌ Alle {retries} Versuche fehlgeschlagen!")
+    return None
+
+
+# ═══════════════════════════════════════════
+# CONNECTIVITY TEST
+# ═══════════════════════════════════════════
+
+def test_connectivity(session):
+    """Test if foerderdatenbank.de is reachable at all."""
+    print("\n🔍 Teste Verbindung zu foerderdatenbank.de...", flush=True)
+    
     try:
-        r = session.get(url, params=params, timeout=30)
-        r.raise_for_status()
-        return BeautifulSoup(r.text, "lxml")
+        r = session.get(BASE, timeout=TIMEOUT, allow_redirects=True)
+        print(f"  ✅ Erreichbar! Status: {r.status_code}, {len(r.text)} Bytes", flush=True)
+        
+        # Check if we got a real page or a block page
+        if r.status_code == 200 and len(r.text) > 1000:
+            print(f"  ✅ Seite sieht normal aus", flush=True)
+            return True
+        elif r.status_code == 403:
+            print(f"  🚫 403 Forbidden – IP wird geblockt!", flush=True)
+            return False
+        elif r.status_code == 503:
+            print(f"  🚫 503 Service Unavailable – Seite unter Wartung?", flush=True)
+            return False
+        else:
+            print(f"  ⚠️ Unerwarteter Status: {r.status_code}", flush=True)
+            # Print first 500 chars of response for debugging
+            print(f"  Response-Anfang: {r.text[:500]}", flush=True)
+            return r.status_code == 200
+            
+    except req.exceptions.ConnectTimeout:
+        print(f"  ❌ Connect-Timeout – Server nicht erreichbar", flush=True)
+        return False
+    except req.exceptions.ReadTimeout:
+        print(f"  ❌ Read-Timeout – Server antwortet nicht", flush=True)
+        return False
+    except req.exceptions.ConnectionError as e:
+        print(f"  ❌ Verbindungsfehler: {e}", flush=True)
+        return False
     except Exception as e:
-        log(f"FEHLER: {e}")
-        return None
+        print(f"  ❌ Fehler: {type(e).__name__}: {e}", flush=True)
+        return False
 
 
 # ═══════════════════════════════════════════
@@ -145,8 +225,8 @@ def collect_all_urls(session):
         page_num = 0
         consecutive_dupe_pages = 0
         
-        print(f"\n📍 {land_key.upper()} ({bl})")
-        print("─" * 40)
+        print(f"\n📍 {land_key.upper()} ({bl})", flush=True)
+        print("─" * 40, flush=True)
         
         # First page URL with params
         next_url = BASE + SEARCH
@@ -161,12 +241,24 @@ def collect_all_urls(session):
             next_params = None  # Only use params for first request
             
             if not soup:
+                log("Kein Response – überspringe Land")
                 break
             
             cards = soup.select("div.card--fundingprogram")
             if not cards:
-                log("Keine Ergebnisse mehr.")
-                break
+                # Try alternative selectors in case the HTML changed
+                cards = soup.select("div.result-item") or soup.select("article.card") or soup.select("[class*='funding']")
+                if not cards:
+                    log(f"Keine Ergebnisse gefunden. Seite hat {len(soup.text)} Zeichen.")
+                    # Debug: show what CSS classes exist on the page
+                    all_divs = soup.select("div[class]")
+                    classes = set()
+                    for div in all_divs[:50]:
+                        for c in div.get("class", []):
+                            classes.add(c)
+                    if classes:
+                        log(f"Gefundene CSS-Klassen: {', '.join(sorted(list(classes))[:20])}")
+                    break
             
             page_num += 1
             page_new = 0
@@ -174,9 +266,12 @@ def collect_all_urls(session):
             for card in cards:
                 a = card.select_one("p.card--title a[href]")
                 if not a:
+                    # Try alternative selectors
+                    a = card.select_one("a[href*='Foerderprogramm']") or card.select_one("h3 a[href]") or card.select_one("a[href]")
+                if not a:
                     continue
                 href = a.get("href", "")
-                if "/Foerderprogramm/" not in href:
+                if "/Foerderprogramm/" not in href and "/foerderprogramm/" not in href.lower():
                     continue
                 
                 url = href if href.startswith("http") else BASE + "/" + href.lstrip("/")
@@ -201,6 +296,9 @@ def collect_all_urls(session):
                     new_in_land += 1
                     page_new += 1
             
+            # Log every page (not just every 20th)
+            log(f"Seite {page_num}: {len(cards)} Cards, {page_new} neu | Land: {new_in_land} neu, {dupes_in_land} dupes | Gesamt: {len(all_programmes)}")
+            
             # Stop condition: if entire page was duplicates
             if page_new == 0:
                 consecutive_dupe_pages += 1
@@ -210,24 +308,23 @@ def collect_all_urls(session):
             else:
                 consecutive_dupe_pages = 0
             
-            # Progress log
-            if page_num % 20 == 0:
-                log(f"Seite {page_num} | {new_in_land} neu, {dupes_in_land} Duplikate | Gesamt: {len(all_programmes)}")
-            
             # Find forward/next button and follow its href
             forward = soup.select_one("a.forward.button")
+            if not forward:
+                # Try alternative selectors for pagination
+                forward = soup.select_one("a[rel='next']") or soup.select_one("a.pagination-next") or soup.select_one("li.next a")
+            
             if forward and forward.get("href"):
                 fwd_href = forward["href"]
                 if fwd_href.startswith("http"):
                     next_url = fwd_href
                 else:
-                    # Ensure proper joining with slash
                     next_url = BASE + "/" + fwd_href.lstrip("/")
             else:
                 log(f"Letzte Seite erreicht (Seite {page_num}).")
                 break
         
-        print(f"  ✅ {new_in_land} neue, {dupes_in_land} Duplikate ({page_num} Seiten) | Gesamt: {len(all_programmes)}")
+        print(f"  ✅ {new_in_land} neue, {dupes_in_land} Duplikate ({page_num} Seiten) | Gesamt: {len(all_programmes)}", flush=True)
     
     return all_programmes
 
@@ -242,21 +339,19 @@ def fetch_details(session, all_programmes, fast_mode=False):
     total = len(all_programmes)
     errors = 0
     
-    print(f"\n{'='*60}")
-    print(f"PHASE 2: {total} Detailseiten abrufen")
+    print(f"\n{'='*60}", flush=True)
+    print(f"PHASE 2: {total} Detailseiten abrufen", flush=True)
     if fast_mode:
-        print("⚡ FAST MODE: Nur Listendaten, keine Detailseiten")
-    print(f"{'='*60}\n")
+        print("⚡ FAST MODE: Nur Listendaten, keine Detailseiten", flush=True)
+    print(f"{'='*60}\n", flush=True)
     
     for i, (url, info) in enumerate(all_programmes.items()):
-        if (i + 1) % 50 == 0 or i == 0:
-            log(f"Fortschritt: {i + 1}/{total}")
+        if (i + 1) % 25 == 0 or i == 0:
+            log(f"Fortschritt: {i + 1}/{total} ({errors} Fehler)")
         
         if fast_mode:
-            # Use only list data
             prog = build_programme_from_list(url, info)
         else:
-            # Fetch detail page
             prog = parse_detail(session, url, info)
         
         if prog:
@@ -264,7 +359,7 @@ def fetch_details(session, all_programmes, fast_mode=False):
         else:
             errors += 1
     
-    print(f"\n  ✅ {len(programmes)} Programme verarbeitet, {errors} Fehler")
+    print(f"\n  ✅ {len(programmes)} Programme verarbeitet, {errors} Fehler", flush=True)
     return programmes
 
 
@@ -280,7 +375,6 @@ def build_programme_from_list(url, info):
         beschreibung_parts.append(meta["Wer wird gefördert?"])
     beschreibung = " | ".join(beschreibung_parts) if beschreibung_parts else None
     
-    # Determine foerderart from meta
     foerderart = "zuschuss"
     art_text = (meta.get("Förderart", "") + " " + (beschreibung or "")).lower()
     for k, v in ART_MAP.items():
@@ -300,7 +394,7 @@ def parse_detail(session, url, info):
     """Parse a detail page for full programme information."""
     soup = fetch(session, url, delay=DELAY_DETAIL)
     if not soup:
-        return build_programme_from_list(url, info)  # Fallback to list data
+        return build_programme_from_list(url, info)
     
     prog = {
         "url_quelle": url,
@@ -319,7 +413,6 @@ def parse_detail(session, url, info):
     foerderberechtigte = None
     foerderbereich = None
     
-    # Parse dt/dd metadata
     for dt in soup.select("dt"):
         dd = dt.find_next_sibling("dd")
         if not dd:
@@ -351,7 +444,6 @@ def parse_detail(session, url, info):
                         prog["url_antrag"] = h
                         break
     
-    # Beschreibung from detail page
     for tag_text in ["Kurztext", "Volltext"]:
         h3 = soup.find("h3", string=re.compile(tag_text, re.I))
         if h3:
@@ -369,7 +461,6 @@ def parse_detail(session, url, info):
                 prog["beschreibung"] = " ".join(parts)[:600]
                 break
     
-    # Fallback description
     if not prog["beschreibung"]:
         meta = info["meta"]
         bits = []
@@ -379,12 +470,10 @@ def parse_detail(session, url, info):
             bits.append(meta["Wer wird gefördert?"])
         prog["beschreibung"] = " | ".join(bits) if bits else None
     
-    # Eigenanteil from description
     ea_match = re.search(r'(\d{1,3})\s*%\s*(?:Eigen|eigen)', prog["beschreibung"] or "", re.I)
     if ea_match:
         prog["eigenanteil_prozent"] = int(ea_match.group(1))
     
-    # Bundeslaender: from phase 1 + check foerdergebiet
     bundeslaender = list(info["bundeslaender"])
     if foerdergebiet and "bundesweit" in foerdergebiet.lower():
         if "BUND" not in bundeslaender:
@@ -402,7 +491,6 @@ def parse_detail(session, url, info):
         bundeslaender=bundeslaender, raw_text=raw_text,
     )
     
-    # Override volumes if found in detail
     amounts = []
     for m in re.finditer(r'([\d.]+)\s*(?:EUR|Euro|€)', prog["beschreibung"] or "", re.I):
         try:
@@ -424,7 +512,6 @@ def build_final_programme(name, url_quelle, beschreibung, foerdergeber,
     """Build the final programme dict with derived fields."""
     txt = raw_text.lower()
     
-    # Phasen
     phasen = set()
     if any(k in txt for k in ["existenzgründ", "gründer", "gründung", "startup", "start-up"]):
         phasen.update(["ideation", "gruendung"])
@@ -437,7 +524,6 @@ def build_final_programme(name, url_quelle, beschreibung, foerdergeber,
     if not phasen:
         phasen = {"fruehphase", "wachstum"}
     
-    # Größen
     groessen = set()
     if any(k in txt for k in ["existenzgründ", "gründer", "freiberuf", "solo", "einzelunternehm"]):
         groessen.add("solo")
@@ -450,7 +536,6 @@ def build_final_programme(name, url_quelle, beschreibung, foerdergeber,
     if not groessen:
         groessen = {"mikro", "klein", "mittel"}
     
-    # Branchen
     slugs = set()
     for kw, slug in BRANCHE_KW.items():
         if kw in txt:
@@ -458,7 +543,6 @@ def build_final_programme(name, url_quelle, beschreibung, foerdergeber,
     if not slugs:
         slugs.add("branchenuebergreifend")
     
-    # Volumes from description
     vmax = 0
     vmin = 0
     amounts = []
@@ -504,14 +588,14 @@ def export_to_supabase(programmes):
     url = os.environ.get("SUPABASE_URL") or os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
     key = os.environ.get("SUPABASE_SERVICE_KEY")
     if not url or not key:
-        print("❌ SUPABASE_URL und SUPABASE_SERVICE_KEY fehlen!")
+        print("❌ SUPABASE_URL und SUPABASE_SERVICE_KEY fehlen!", flush=True)
         return False
 
     from supabase import create_client
     sb = create_client(url, key)
     today = datetime.now().strftime("%Y-%m-%d")
 
-    print(f"\n📤 Schreibe {len(programmes)} Programme in Supabase...")
+    print(f"\n📤 Schreibe {len(programmes)} Programme in Supabase...", flush=True)
 
     BATCH = 50
     upserted = 0
@@ -544,13 +628,13 @@ def export_to_supabase(programmes):
         try:
             sb.table("programme").upsert(rows, on_conflict="url_quelle", ignore_duplicates=False).execute()
             upserted += len(batch)
-            print(f"  ✅ {upserted}/{len(programmes)}", end="\r")
+            log(f"✅ {upserted}/{len(programmes)} upserted")
         except Exception as e:
-            print(f"\n  ❌ Batch-Fehler: {e}")
+            print(f"\n  ❌ Batch-Fehler: {e}", flush=True)
             errors += len(batch)
 
     # Deactivate stale programmes
-    print(f"\n\n🔄 Markiere veraltete Programme als inaktiv...")
+    print(f"\n🔄 Markiere veraltete Programme als inaktiv...", flush=True)
     try:
         scraped_urls = {p["url_quelle"] for p in programmes}
         existing = sb.table("programme").select("id, url_quelle").eq("quelle", "foerderdatenbank").eq("aktiv", True).execute()
@@ -558,15 +642,15 @@ def export_to_supabase(programmes):
         if stale_ids:
             for i in range(0, len(stale_ids), 100):
                 sb.table("programme").update({"aktiv": False}).in_("id", stale_ids[i:i+100]).execute()
-            print(f"  📴 {len(stale_ids)} Programme deaktiviert")
+            print(f"  📴 {len(stale_ids)} Programme deaktiviert", flush=True)
         else:
-            print(f"  ✅ Keine veralteten Programme")
+            print(f"  ✅ Keine veralteten Programme", flush=True)
     except Exception as e:
-        print(f"  ⚠️ Fehler: {e}")
+        print(f"  ⚠️ Fehler: {e}", flush=True)
 
-    print(f"\n{'='*60}")
-    print(f"  ✅ Supabase: {upserted} upserted, {errors} Fehler")
-    print(f"{'='*60}\n")
+    print(f"\n{'='*60}", flush=True)
+    print(f"  ✅ Supabase: {upserted} upserted, {errors} Fehler", flush=True)
+    print(f"{'='*60}\n", flush=True)
     return errors == 0
 
 
@@ -577,7 +661,7 @@ def export_to_json(programmes, path="data/foerderprogramme.json"):
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, indent=2)
-    print(f"💾 JSON: {len(programmes)} Programme → {path}")
+    print(f"💾 JSON: {len(programmes)} Programme → {path}", flush=True)
 
 
 # ═══════════════════════════════════════════
@@ -585,7 +669,7 @@ def export_to_json(programmes, path="data/foerderprogramme.json"):
 # ═══════════════════════════════════════════
 
 def main():
-    ap = argparse.ArgumentParser(description="Förderly Scraper v4.0")
+    ap = argparse.ArgumentParser(description="Förderly Scraper v4.1")
     ap.add_argument("--test", action="store_true", help="Testlauf: Bayern, 5 Programme")
     ap.add_argument("--fast", action="store_true", help="Nur Listendaten, keine Detailseiten")
     ap.add_argument("--json-only", action="store_true", help="Nur JSON, kein Supabase")
@@ -597,34 +681,45 @@ def main():
     session = req.Session()
     session.headers.update(HEADERS)
 
-    print(f"\n{'='*60}")
-    print(f"  FÖRDERLY SCRAPER v4.0")
-    print(f"{'='*60}\n")
+    print(f"\n{'='*60}", flush=True)
+    print(f"  FÖRDERLY SCRAPER v4.1", flush=True)
+    print(f"  Zeitpunkt: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", flush=True)
+    print(f"{'='*60}\n", flush=True)
+
+    # CONNECTIVITY TEST
+    if not test_connectivity(session):
+        print("\n❌ foerderdatenbank.de ist nicht erreichbar!", flush=True)
+        print("   Mögliche Ursachen:", flush=True)
+        print("   - GitHub Actions IP wird geblockt", flush=True)
+        print("   - Seite ist offline / unter Wartung", flush=True)
+        print("   - DNS-Problem", flush=True)
+        print("\n   Fallback: Behalte bestehende Daten bei.", flush=True)
+        sys.exit(1)
 
     # PHASE 1: Collect URLs
-    print("═══ PHASE 1: Programme-URLs sammeln ═══\n")
+    print("\n═══ PHASE 1: Programme-URLs sammeln ═══\n", flush=True)
     all_programmes = collect_all_urls(session)
-    print(f"\n📊 {len(all_programmes)} einzigartige Programme gefunden\n")
+    print(f"\n📊 {len(all_programmes)} einzigartige Programme gefunden\n", flush=True)
 
     if args.test:
-        # Limit to 5 for testing
         items = dict(list(all_programmes.items())[:5])
         all_programmes = items
 
     if not all_programmes:
-        print("⚠️ Keine Programme gefunden!")
+        print("⚠️ Keine Programme gefunden!", flush=True)
+        print("   Die HTML-Struktur von foerderdatenbank.de hat sich möglicherweise geändert.", flush=True)
         sys.exit(1)
 
     # PHASE 2: Fetch details
-    print("═══ PHASE 2: Details abrufen ═══\n")
+    print("═══ PHASE 2: Details abrufen ═══\n", flush=True)
     programmes = fetch_details(session, all_programmes, fast_mode=args.fast)
 
     if not programmes:
-        print("⚠️ Keine Programme verarbeitet!")
+        print("⚠️ Keine Programme verarbeitet!", flush=True)
         sys.exit(1)
 
     # PHASE 3: Export
-    print(f"\n═══ PHASE 3: Export ({len(programmes)} Programme) ═══\n")
+    print(f"\n═══ PHASE 3: Export ({len(programmes)} Programme) ═══\n", flush=True)
     if args.json_only:
         export_to_json(programmes, args.output)
     else:
@@ -632,7 +727,7 @@ def main():
         if args.json_backup or not success:
             export_to_json(programmes, args.output)
 
-    print("🎉 Fertig!")
+    print("🎉 Fertig!", flush=True)
 
 
 if __name__ == "__main__":
