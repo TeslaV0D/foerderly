@@ -1,21 +1,25 @@
 """
-FÖRDERLY – Scraper v3.0
+FÖRDERLY – Scraper v4.0
 ========================
 Scrapt foerderdatenbank.de und schreibt direkt in Supabase.
-Kann auch als JSON-Backup exportieren.
+
+Strategie:
+  Phase 1: Alle Bundesländer durchgehen, URLs sammeln (mit Deduplizierung)
+  Phase 2: Alle einzigartigen Detail-Seiten abrufen
+  Phase 3: In Supabase upserten
+
+Stoppt automatisch pro Land wenn:
+  - Keine neuen Ergebnisse mehr kommen (Duplikate = fertig)
+  - Leere Seite kommt
 
 Installation:
     pip install requests beautifulsoup4 lxml supabase
 
 Verwendung:
-    python scraper.py --test                     # Testlauf: Bayern, 5 Programme
-    python scraper.py --alle                     # Alles scrapen (~30-60min)
-    python scraper.py --land bayern --max 50     # Nur Bayern
-    python scraper.py --json-only                # Nur JSON, kein Supabase
-
-Umgebungsvariablen:
-    SUPABASE_URL=https://xxx.supabase.co
-    SUPABASE_SERVICE_KEY=eyJxxx...
+    python scraper.py --test          # Testlauf: 5 Programme
+    python scraper.py                 # Alles scrapen
+    python scraper.py --json-only     # Nur JSON, kein Supabase
+    python scraper.py --fast          # Nur Listendaten, keine Detailseiten
 """
 
 import requests as req
@@ -26,22 +30,33 @@ from bs4 import BeautifulSoup
 # ─── Config ───
 BASE = "https://www.foerderdatenbank.de"
 SEARCH = "/SiteGlobals/FDB/Forms/Suche/Expertensuche_Formular.html"
-DELAY = 1.5
+DELAY_LIST = 1.2   # Delay zwischen Listenseiten
+DELAY_DETAIL = 1.5 # Delay zwischen Detailseiten
 
 HEADERS = {
-    "User-Agent": "Foerderly-Bot/3.0 (+https://foerderly.com)",
+    "User-Agent": "Foerderly-Bot/4.0 (+https://foerderly.com)",
     "Accept": "text/html,application/xhtml+xml",
     "Accept-Language": "de-DE,de;q=0.9",
 }
 
 BL_PARAMS = {
-    "bundesweit": "_bundesweit", "baden-wuerttemberg": "baden_wuerttemberg",
-    "bayern": "bayern", "berlin": "berlin", "brandenburg": "brandenburg",
-    "bremen": "bremen", "hamburg": "hamburg", "hessen": "hessen",
-    "mecklenburg-vorpommern": "mecklenburg_vorpommern", "niedersachsen": "de_ni",
-    "nordrhein-westfalen": "nordrhein_westfalen", "rheinland-pfalz": "rheinland_pfalz",
-    "saarland": "saarland", "sachsen": "sachsen", "sachsen-anhalt": "de_st",
-    "schleswig-holstein": "schleswig_holstein", "thueringen": "thueringen",
+    "bundesweit": "_bundesweit",
+    "baden-wuerttemberg": "baden_wuerttemberg",
+    "bayern": "bayern",
+    "berlin": "berlin",
+    "brandenburg": "brandenburg",
+    "bremen": "bremen",
+    "hamburg": "hamburg",
+    "hessen": "hessen",
+    "mecklenburg-vorpommern": "mecklenburg_vorpommern",
+    "niedersachsen": "de_ni",
+    "nordrhein-westfalen": "nordrhein_westfalen",
+    "rheinland-pfalz": "rheinland_pfalz",
+    "saarland": "saarland",
+    "sachsen": "sachsen",
+    "sachsen-anhalt": "de_st",
+    "schleswig-holstein": "schleswig_holstein",
+    "thueringen": "thueringen",
 }
 
 BL_SHORT = {
@@ -55,8 +70,8 @@ BL_SHORT = {
 
 ART_MAP = {
     "zuschuss": "zuschuss", "darlehen": "kredit", "kredit": "kredit",
-    "buergschaft": "buergschaft", "beteiligung": "beteiligung",
-    "garantie": "buergschaft", "sonstige": "zuschuss",
+    "bürgschaft": "buergschaft", "buergschaft": "buergschaft",
+    "beteiligung": "beteiligung", "garantie": "buergschaft",
 }
 
 BRANCHE_KW = {
@@ -70,6 +85,9 @@ BRANCHE_KW = {
     "landwirtschaft": "landwirtschaft", "mobilität": "mobilitaet-logistik",
     "umwelt": "energie-umwelt", "naturschutz": "energie-umwelt",
     "wohnungsbau": "bauwesen-immobilien", "smart cities": "digitalisierung",
+    "it": "it-software", "software": "it-software", "digital": "digitalisierung",
+    "technologie": "forschung-entwicklung", "tourismus": "tourismus-gastro",
+    "gastronomie": "tourismus-gastro",
 }
 
 BRANCHEN = [
@@ -97,8 +115,8 @@ def log(msg):
     print(f"  [{datetime.now().strftime('%H:%M:%S')}] {msg}")
 
 
-def fetch(session, url, params=None):
-    time.sleep(DELAY)
+def fetch(session, url, params=None, delay=DELAY_LIST):
+    time.sleep(delay)
     try:
         r = session.get(url, params=params, timeout=30)
         r.raise_for_status()
@@ -109,92 +127,210 @@ def fetch(session, url, params=None):
 
 
 # ═══════════════════════════════════════════
-# SCRAPING LOGIC (unchanged from v2)
+# PHASE 1: Collect all unique programme URLs
 # ═══════════════════════════════════════════
 
-def scrape_list(session, land_key, max_pages=10):
-    results = []
-    seen = set()
+def collect_all_urls(session):
+    """
+    Scrapt alle Bundesländer und sammelt einzigartige Programme-URLs.
+    Stoppt pro Land sobald nur noch Duplikate kommen.
+    Gibt dict zurück: {url: {"name": ..., "meta": ..., "bundeslaender": [...]}}
+    """
+    all_programmes = {}  # url → {name, meta, bundeslaender}
+    
+    for land_key, land_param in BL_PARAMS.items():
+        bl = BL_SHORT[land_key]
+        new_in_land = 0
+        dupes_in_land = 0
+        page = 0
+        consecutive_dupe_pages = 0
+        
+        print(f"\n📍 {land_key.upper()} ({bl})")
+        print("─" * 40)
+        
+        while True:
+            params = {
+                "submit": "Suchen",
+                "filterCategories": "FundingProgram",
+                "cl2Processes_Foerdergebiet": land_param,
+            }
+            if page > 0:
+                params["pageNo"] = page
+            
+            soup = fetch(session, BASE + SEARCH, params)
+            if not soup:
+                break
+            
+            cards = soup.select("div.card--fundingprogram")
+            if not cards:
+                log("Keine Ergebnisse mehr.")
+                break
+            
+            page_new = 0
+            for card in cards:
+                a = card.select_one("p.card--title a[href]")
+                if not a:
+                    continue
+                href = a.get("href", "")
+                if "/Foerderprogramm/" not in href:
+                    continue
+                
+                url = href if href.startswith("http") else BASE + "/" + href.lstrip("/")
+                name = a.get_text(strip=True)
+                
+                # Extract meta from list card
+                meta = {}
+                for dt in card.select("dt"):
+                    dd = dt.find_next_sibling("dd")
+                    if dd:
+                        meta[dt.get_text(strip=True).rstrip(":")] = dd.get_text(strip=True)
+                
+                if url in all_programmes:
+                    # Already seen – just add this Bundesland
+                    if bl not in all_programmes[url]["bundeslaender"]:
+                        all_programmes[url]["bundeslaender"].append(bl)
+                    dupes_in_land += 1
+                else:
+                    # New programme
+                    all_programmes[url] = {
+                        "name": name,
+                        "meta": meta,
+                        "bundeslaender": [bl],
+                    }
+                    new_in_land += 1
+                    page_new += 1
+            
+            # Stop condition: if entire page was duplicates
+            if page_new == 0:
+                consecutive_dupe_pages += 1
+                if consecutive_dupe_pages >= 3:
+                    log(f"3 Seiten nur Duplikate → nächstes Land")
+                    break
+            else:
+                consecutive_dupe_pages = 0
+            
+            page += 1
+            
+            # Safety: log progress every 10 pages
+            if page % 10 == 0:
+                log(f"Seite {page + 1} | {new_in_land} neu, {dupes_in_land} Duplikate")
+            
+            # Check for next page button
+            if not soup.select_one("a.forward.button"):
+                log("Letzte Seite erreicht.")
+                break
+        
+        print(f"  ✅ {new_in_land} neue, {dupes_in_land} Duplikate | Gesamt: {len(all_programmes)}")
+    
+    return all_programmes
 
-    for page in range(1, max_pages + 1):
-        params = {
-            "submit": "Suchen",
-            "filterCategories": "FundingProgram",
-            "cl2Processes_Foerdergebiet": BL_PARAMS[land_key],
-        }
-        if page > 1:
-            params["pageNo"] = page - 1
 
-        log(f"Seite {page} für {land_key}...")
-        soup = fetch(session, BASE + SEARCH, params)
-        if not soup:
+# ═══════════════════════════════════════════
+# PHASE 2: Fetch detail pages
+# ═══════════════════════════════════════════
+
+def fetch_details(session, all_programmes, fast_mode=False):
+    """Fetch detail pages for all programmes."""
+    programmes = []
+    total = len(all_programmes)
+    errors = 0
+    
+    print(f"\n{'='*60}")
+    print(f"PHASE 2: {total} Detailseiten abrufen")
+    if fast_mode:
+        print("⚡ FAST MODE: Nur Listendaten, keine Detailseiten")
+    print(f"{'='*60}\n")
+    
+    for i, (url, info) in enumerate(all_programmes.items()):
+        if (i + 1) % 50 == 0 or i == 0:
+            log(f"Fortschritt: {i + 1}/{total}")
+        
+        if fast_mode:
+            # Use only list data
+            prog = build_programme_from_list(url, info)
+        else:
+            # Fetch detail page
+            prog = parse_detail(session, url, info)
+        
+        if prog:
+            programmes.append(prog)
+        else:
+            errors += 1
+    
+    print(f"\n  ✅ {len(programmes)} Programme verarbeitet, {errors} Fehler")
+    return programmes
+
+
+def build_programme_from_list(url, info):
+    """Build a programme entry from list-only data (fast mode)."""
+    meta = info["meta"]
+    name = info["name"]
+    
+    beschreibung_parts = []
+    if meta.get("Was wird gefördert?"):
+        beschreibung_parts.append(meta["Was wird gefördert?"])
+    if meta.get("Wer wird gefördert?"):
+        beschreibung_parts.append(meta["Wer wird gefördert?"])
+    beschreibung = " | ".join(beschreibung_parts) if beschreibung_parts else None
+    
+    # Determine foerderart from meta
+    foerderart = "zuschuss"
+    art_text = (meta.get("Förderart", "") + " " + (beschreibung or "")).lower()
+    for k, v in ART_MAP.items():
+        if k in art_text:
+            foerderart = v
             break
-
-        cards = soup.select("div.card--fundingprogram")
-        if not cards:
-            log("Keine Ergebnisse mehr.")
-            break
-
-        for card in cards:
-            a = card.select_one("p.card--title a[href]")
-            if not a:
-                continue
-            href = a.get("href", "")
-            if "/Foerderprogramm/" not in href:
-                continue
-
-            url = href if href.startswith("http") else BASE + "/" + href.lstrip("/")
-            if url in seen:
-                continue
-            seen.add(url)
-
-            name = a.get_text(strip=True)
-            meta = {}
-            for dt in card.select("dt"):
-                dd = dt.find_next_sibling("dd")
-                if dd:
-                    meta[dt.get_text(strip=True).rstrip(":")] = dd.get_text(strip=True)
-
-            results.append((url, name, meta))
-
-        log(f"  {len(cards)} Karten, {len(results)} unique")
-
-        if not soup.select_one("a.forward.button"):
-            break
-
-    return results
+    
+    return build_final_programme(
+        name=name, url_quelle=url, beschreibung=beschreibung,
+        foerdergeber=meta.get("Fördergeber"), foerderart=foerderart,
+        bundeslaender=info["bundeslaender"],
+        raw_text=(beschreibung or "") + " " + name,
+    )
 
 
-def parse_detail(session, url, name, meta, land_key):
-    soup = fetch(session, url)
+def parse_detail(session, url, info):
+    """Parse a detail page for full programme information."""
+    soup = fetch(session, url, delay=DELAY_DETAIL)
     if not soup:
-        return None
-
+        return build_programme_from_list(url, info)  # Fallback to list data
+    
     prog = {
-        "name": name, "kurzname": None, "url_quelle": url, "url_antrag": None,
-        "foerdergeber": None, "foerderart": "zuschuss", "foerdergebiet": None,
-        "foerderberechtigte": None, "foerderbereich": None, "beschreibung": None,
-        "volumen_min_eur": 0, "volumen_max_eur": 0, "eigenanteil_prozent": 0,
+        "url_quelle": url,
+        "name": info["name"],
+        "kurzname": None,
+        "url_antrag": None,
+        "foerdergeber": None,
+        "foerderart": "zuschuss",
+        "beschreibung": None,
+        "volumen_min_eur": 0,
+        "volumen_max_eur": 0,
+        "eigenanteil_prozent": 0,
     }
-
+    
+    foerdergebiet = None
+    foerderberechtigte = None
+    foerderbereich = None
+    
+    # Parse dt/dd metadata
     for dt in soup.select("dt"):
         dd = dt.find_next_sibling("dd")
         if not dd:
             continue
         label = dt.get_text(strip=True).rstrip(":").lower()
         value = dd.get_text(strip=True)
-
+        
         if "förderart" in label:
             for k, v in ART_MAP.items():
                 if k in value.lower():
                     prog["foerderart"] = v
                     break
         elif "fördergebiet" in label:
-            prog["foerdergebiet"] = value
+            foerdergebiet = value
         elif "förderberechtigte" in label:
-            prog["foerderberechtigte"] = value
+            foerderberechtigte = value
         elif "förderbereich" in label:
-            prog["foerderbereich"] = value
+            foerderbereich = value
         elif "fördergeber" in label:
             link = dd.select_one("a")
             prog["foerdergeber"] = link.get_text(strip=True) if link else value
@@ -207,8 +343,8 @@ def parse_detail(session, url, name, meta, land_key):
                     if h.startswith("http"):
                         prog["url_antrag"] = h
                         break
-
-    # Beschreibung
+    
+    # Beschreibung from detail page
     for tag_text in ["Kurztext", "Volltext"]:
         h3 = soup.find("h3", string=re.compile(tag_text, re.I))
         if h3:
@@ -217,30 +353,71 @@ def parse_detail(session, url, name, meta, land_key):
                 if sib.name in ("h2", "h3"):
                     break
                 if sib.name == "p":
-                    parts.append(sib.get_text(strip=True))
-                if len(parts) >= 3:
+                    t = sib.get_text(strip=True)
+                    if t:
+                        parts.append(t)
+                if len(parts) >= 4:
                     break
             if parts:
-                prog["beschreibung"] = " ".join(parts)[:500]
+                prog["beschreibung"] = " ".join(parts)[:600]
                 break
-
+    
+    # Fallback description
     if not prog["beschreibung"]:
+        meta = info["meta"]
         bits = []
         if meta.get("Was wird gefördert?"):
             bits.append(meta["Was wird gefördert?"])
         if meta.get("Wer wird gefördert?"):
             bits.append(meta["Wer wird gefördert?"])
         prog["beschreibung"] = " | ".join(bits) if bits else None
-
-    # Bundesland
-    bl = BL_SHORT.get(land_key, "BUND")
-    bundeslaender = [bl]
-    if prog["foerdergebiet"] and "bundesweit" in prog["foerdergebiet"].lower():
+    
+    # Eigenanteil from description
+    ea_match = re.search(r'(\d{1,3})\s*%\s*(?:Eigen|eigen)', prog["beschreibung"] or "", re.I)
+    if ea_match:
+        prog["eigenanteil_prozent"] = int(ea_match.group(1))
+    
+    # Bundeslaender: from phase 1 + check foerdergebiet
+    bundeslaender = list(info["bundeslaender"])
+    if foerdergebiet and "bundesweit" in foerdergebiet.lower():
         if "BUND" not in bundeslaender:
             bundeslaender.append("BUND")
+    
+    raw_text = " ".join(filter(None, [
+        foerderberechtigte, foerderbereich, prog["beschreibung"], prog["name"]
+    ]))
+    
+    result = build_final_programme(
+        name=prog["name"], kurzname=prog["kurzname"],
+        url_quelle=prog["url_quelle"], url_antrag=prog["url_antrag"],
+        beschreibung=prog["beschreibung"], foerdergeber=prog["foerdergeber"],
+        foerderart=prog["foerderart"], eigenanteil_prozent=prog["eigenanteil_prozent"],
+        bundeslaender=bundeslaender, raw_text=raw_text,
+    )
+    
+    # Override volumes if found in detail
+    amounts = []
+    for m in re.finditer(r'([\d.]+)\s*(?:EUR|Euro|€)', prog["beschreibung"] or "", re.I):
+        try:
+            v = int(m.group(1).replace(".", ""))
+            if v > 0:
+                amounts.append(v)
+        except ValueError:
+            pass
+    if amounts:
+        result["volumen_max_eur"] = max(amounts)
+        result["volumen_min_eur"] = min(amounts) if len(amounts) > 1 else 0
+    
+    return result
 
-    # Phasen ableiten
-    txt = f"{prog['foerderberechtigte'] or ''} {prog['foerderbereich'] or ''} {prog['beschreibung'] or ''}".lower()
+
+def build_final_programme(name, url_quelle, beschreibung, foerdergeber,
+                          foerderart, bundeslaender, raw_text,
+                          kurzname=None, url_antrag=None, eigenanteil_prozent=0):
+    """Build the final programme dict with derived fields."""
+    txt = raw_text.lower()
+    
+    # Phasen
     phasen = set()
     if any(k in txt for k in ["existenzgründ", "gründer", "gründung", "startup", "start-up"]):
         phasen.update(["ideation", "gruendung"])
@@ -248,14 +425,14 @@ def parse_detail(session, url, name, meta, land_key):
         phasen.add("fruehphase")
     if any(k in txt for k in ["mittelstand", "kmu", "unternehmen", "betrieb"]):
         phasen.update(["fruehphase", "wachstum"])
-    if any(k in txt for k in ["investition", "modernisierung"]):
+    if any(k in txt for k in ["investition", "modernisierung", "erweiterung"]):
         phasen.update(["wachstum", "etabliert"])
     if not phasen:
         phasen = {"fruehphase", "wachstum"}
-
-    # Größen ableiten
+    
+    # Größen
     groessen = set()
-    if any(k in txt for k in ["existenzgründ", "gründer", "freiberuf", "solo"]):
+    if any(k in txt for k in ["existenzgründ", "gründer", "freiberuf", "solo", "einzelunternehm"]):
         groessen.add("solo")
     if any(k in txt for k in ["kleinst", "mikro"]):
         groessen.update(["solo", "mikro"])
@@ -265,186 +442,120 @@ def parse_detail(session, url, name, meta, land_key):
         groessen.add("mittel")
     if not groessen:
         groessen = {"mikro", "klein", "mittel"}
-
-    # Branchen ableiten
+    
+    # Branchen
     slugs = set()
     for kw, slug in BRANCHE_KW.items():
         if kw in txt:
             slugs.add(slug)
     if not slugs:
         slugs.add("branchenuebergreifend")
-
-    # Volumen extrahieren
+    
+    # Volumes from description
     vmax = 0
     vmin = 0
     amounts = []
-    for m in re.finditer(r'(\d[\d.]*)\s*(?:EUR|Euro|€)', prog["beschreibung"] or "", re.I):
+    for m in re.finditer(r'([\d.]+)\s*(?:EUR|Euro|€)', beschreibung or "", re.I):
         try:
             v = int(m.group(1).replace(".", ""))
-            amounts.append(v)
+            if v > 0:
+                amounts.append(v)
         except ValueError:
             pass
     if amounts:
         vmax = max(amounts)
         vmin = min(amounts) if len(amounts) > 1 else 0
-
-    # Clean up internal fields
-    for key in ["foerdergebiet", "foerderberechtigte", "foerderbereich"]:
-        prog.pop(key, None)
-
+    
     return {
-        **prog,
-        "bundeslaender": bundeslaender,
+        "name": name,
+        "kurzname": kurzname,
+        "beschreibung": beschreibung,
+        "foerdergeber": foerdergeber,
+        "foerderart": foerderart,
+        "volumen_min_eur": vmin,
+        "volumen_max_eur": vmax,
+        "eigenanteil_prozent": eigenanteil_prozent,
+        "url_antrag": url_antrag,
+        "url_quelle": url_quelle,
+        "quelle": "foerderdatenbank",
+        "bundeslaender": sorted(set(bundeslaender)),
         "phasen": sorted(phasen),
         "groessen": sorted(groessen),
         "branchen": [B_MAP[s] for s in sorted(slugs) if s in B_MAP],
-        "volumen_min_eur": vmin,
-        "volumen_max_eur": vmax,
         "status": "aktiv",
         "antragsfrist": None,
         "aktualisiert_am": datetime.now().strftime("%Y-%m-%d"),
         "aktiv": True,
-        "quelle": "foerderdatenbank",
     }
 
 
-def run_scraper(laender, max_per_land, max_total):
-    session = req.Session()
-    session.headers.update(HEADERS)
-    programmes = []
-    seen_urls = set()
-    errors = 0
-
-    print(f"\n{'='*60}")
-    print(f"FÖRDERLY SCRAPER v3.0")
-    print(f"{'='*60}")
-    print(f"Länder: {len(laender)} | Max/Land: {max_per_land} | Max gesamt: {max_total}")
-    print(f"{'='*60}\n")
-
-    for land in laender:
-        if len(programmes) >= max_total:
-            print(f"\n⚠️  Limit ({max_total}) erreicht.")
-            break
-
-        print(f"\n📍 {land.upper()}")
-        print("─" * 40)
-
-        # Scrape all available pages (stop when no more results)
-        pages_needed = 999
-        entries = scrape_list(session, land, max_pages=pages_needed)
-        entries = entries[:max_per_land]
-
-        remaining = max_total - len(programmes)
-        entries = entries[:remaining]
-
-        count = 0
-        for url, name, meta in entries:
-            if url in seen_urls:
-                continue
-            seen_urls.add(url)
-
-            prog = parse_detail(session, url, name, meta, land)
-            if prog:
-                programmes.append(prog)
-                count += 1
-            else:
-                errors += 1
-
-        print(f"  ✅ {count} Programme von {land}")
-
-    print(f"\n{'='*60}")
-    print(f"FERTIG: {len(programmes)} Programme | {errors} Fehler")
-    print(f"{'='*60}\n")
-
-    return programmes
-
-
 # ═══════════════════════════════════════════
-# EXPORT: Supabase (primary) + JSON (backup)
+# PHASE 3: Export
 # ═══════════════════════════════════════════
 
 def export_to_supabase(programmes):
-    """Upsert all programmes into Supabase based on url_quelle."""
     url = os.environ.get("SUPABASE_URL") or os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
     key = os.environ.get("SUPABASE_SERVICE_KEY")
-
     if not url or not key:
-        print("❌ SUPABASE_URL und SUPABASE_SERVICE_KEY müssen gesetzt sein!")
+        print("❌ SUPABASE_URL und SUPABASE_SERVICE_KEY fehlen!")
         return False
 
     from supabase import create_client
     sb = create_client(url, key)
+    today = datetime.now().strftime("%Y-%m-%d")
 
     print(f"\n📤 Schreibe {len(programmes)} Programme in Supabase...")
 
-    # Mark all existing as potentially stale
-    today = datetime.now().strftime("%Y-%m-%d")
-
-    # Upsert in batches
     BATCH = 50
     upserted = 0
     errors = 0
 
     for i in range(0, len(programmes), BATCH):
         batch = programmes[i:i + BATCH]
-
-        # Prepare rows (remove id, let DB handle it)
-        rows = []
-        for p in batch:
-            rows.append({
-                "name": p["name"],
-                "kurzname": p.get("kurzname"),
-                "beschreibung": p.get("beschreibung"),
-                "foerdergeber": p.get("foerdergeber"),
-                "foerderart": p.get("foerderart", "zuschuss"),
-                "volumen_min_eur": p.get("volumen_min_eur", 0),
-                "volumen_max_eur": p.get("volumen_max_eur", 0),
-                "eigenanteil_prozent": p.get("eigenanteil_prozent", 0),
-                "status": "aktiv",
-                "antragsfrist": p.get("antragsfrist"),
-                "url_antrag": p.get("url_antrag"),
-                "url_quelle": p["url_quelle"],
-                "quelle": p.get("quelle", "foerderdatenbank"),
-                "bundeslaender": p.get("bundeslaender", []),
-                "phasen": p.get("phasen", []),
-                "groessen": p.get("groessen", []),
-                "branchen": p.get("branchen", []),
-                "aktiv": True,
-                "aktualisiert_am": today,
-            })
+        rows = [{
+            "name": p["name"],
+            "kurzname": p.get("kurzname"),
+            "beschreibung": p.get("beschreibung"),
+            "foerdergeber": p.get("foerdergeber"),
+            "foerderart": p.get("foerderart", "zuschuss"),
+            "volumen_min_eur": p.get("volumen_min_eur", 0),
+            "volumen_max_eur": p.get("volumen_max_eur", 0),
+            "eigenanteil_prozent": p.get("eigenanteil_prozent", 0),
+            "status": "aktiv",
+            "antragsfrist": p.get("antragsfrist"),
+            "url_antrag": p.get("url_antrag"),
+            "url_quelle": p["url_quelle"],
+            "quelle": "foerderdatenbank",
+            "bundeslaender": p.get("bundeslaender", []),
+            "phasen": p.get("phasen", []),
+            "groessen": p.get("groessen", []),
+            "branchen": p.get("branchen", []),
+            "aktiv": True,
+            "aktualisiert_am": today,
+        } for p in batch]
 
         try:
-            result = sb.table("programme").upsert(
-                rows,
-                on_conflict="url_quelle",
-                ignore_duplicates=False
-            ).execute()
+            sb.table("programme").upsert(rows, on_conflict="url_quelle", ignore_duplicates=False).execute()
             upserted += len(batch)
             print(f"  ✅ {upserted}/{len(programmes)}", end="\r")
         except Exception as e:
             print(f"\n  ❌ Batch-Fehler: {e}")
             errors += len(batch)
 
-    # Mark programmes not seen in this run as inactive
+    # Deactivate stale programmes
     print(f"\n\n🔄 Markiere veraltete Programme als inaktiv...")
     try:
-        scraped_urls = [p["url_quelle"] for p in programmes]
-        # Get all active programmes from this source
+        scraped_urls = {p["url_quelle"] for p in programmes}
         existing = sb.table("programme").select("id, url_quelle").eq("quelle", "foerderdatenbank").eq("aktiv", True).execute()
-        stale_ids = [
-            row["id"] for row in (existing.data or [])
-            if row["url_quelle"] not in scraped_urls
-        ]
+        stale_ids = [r["id"] for r in (existing.data or []) if r["url_quelle"] not in scraped_urls]
         if stale_ids:
-            # Batch deactivate
             for i in range(0, len(stale_ids), 100):
-                batch_ids = stale_ids[i:i+100]
-                sb.table("programme").update({"aktiv": False}).in_("id", batch_ids).execute()
+                sb.table("programme").update({"aktiv": False}).in_("id", stale_ids[i:i+100]).execute()
             print(f"  📴 {len(stale_ids)} Programme deaktiviert")
         else:
             print(f"  ✅ Keine veralteten Programme")
     except Exception as e:
-        print(f"  ⚠️  Konnte veraltete Programme nicht markieren: {e}")
+        print(f"  ⚠️ Fehler: {e}")
 
     print(f"\n{'='*60}")
     print(f"  ✅ Supabase: {upserted} upserted, {errors} Fehler")
@@ -453,21 +564,13 @@ def export_to_supabase(programmes):
 
 
 def export_to_json(programmes, path="data/foerderprogramme.json"):
-    """Backup-Export als JSON."""
     for i, p in enumerate(programmes):
         p["id"] = i + 1
-
-    out = {
-        "programme": programmes,
-        "branchen": BRANCHEN,
-        "scrape_datum": datetime.now().isoformat(),
-    }
-
+    out = {"programme": programmes, "branchen": BRANCHEN, "scrape_datum": datetime.now().isoformat()}
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, indent=2)
-
-    print(f"💾 JSON-Backup: {len(programmes)} Programme → {path}")
+    print(f"💾 JSON: {len(programmes)} Programme → {path}")
 
 
 # ═══════════════════════════════════════════
@@ -475,41 +578,52 @@ def export_to_json(programmes, path="data/foerderprogramme.json"):
 # ═══════════════════════════════════════════
 
 def main():
-    ap = argparse.ArgumentParser(description="Förderly Scraper v3.0")
+    ap = argparse.ArgumentParser(description="Förderly Scraper v4.0")
     ap.add_argument("--test", action="store_true", help="Testlauf: Bayern, 5 Programme")
-    ap.add_argument("--land", type=str, help="Nur ein Bundesland (z.B. bayern)")
-    ap.add_argument("--max", type=int, default=99999, help="Max Programme gesamt")
-    ap.add_argument("--max-per-land", type=int, default=99999, help="Max pro Land")
-    ap.add_argument("--alle", action="store_true", help="Alles scrapen")
+    ap.add_argument("--fast", action="store_true", help="Nur Listendaten, keine Detailseiten")
     ap.add_argument("--json-only", action="store_true", help="Nur JSON, kein Supabase")
     ap.add_argument("--json-backup", action="store_true", help="Zusätzlich JSON-Backup")
+    ap.add_argument("--alle", action="store_true", help="Alle Länder (default)")
     ap.add_argument("--output", default="data/foerderprogramme.json")
     args = ap.parse_args()
 
-    if args.test:
-        print("🧪 TESTLAUF\n")
-        progs = run_scraper(["bayern"], max_per_land=5, max_total=5)
-    elif args.alle:
-        progs = run_scraper(list(BL_PARAMS.keys()), max_per_land=args.max_per_land, max_total=args.max)
-    elif args.land:
-        if args.land not in BL_PARAMS:
-            print(f"❌ Unbekannt: {args.land}\n   Verfügbar: {', '.join(BL_PARAMS.keys())}")
-            sys.exit(1)
-        progs = run_scraper([args.land], max_per_land=args.max_per_land, max_total=args.max)
-    else:
-        progs = run_scraper(list(BL_PARAMS.keys()), max_per_land=args.max_per_land, max_total=args.max)
+    session = req.Session()
+    session.headers.update(HEADERS)
 
-    if not progs:
-        print("⚠️  Keine Programme gescrapt.")
+    print(f"\n{'='*60}")
+    print(f"  FÖRDERLY SCRAPER v4.0")
+    print(f"{'='*60}\n")
+
+    # PHASE 1: Collect URLs
+    print("═══ PHASE 1: Programme-URLs sammeln ═══\n")
+    all_programmes = collect_all_urls(session)
+    print(f"\n📊 {len(all_programmes)} einzigartige Programme gefunden\n")
+
+    if args.test:
+        # Limit to 5 for testing
+        items = dict(list(all_programmes.items())[:5])
+        all_programmes = items
+
+    if not all_programmes:
+        print("⚠️ Keine Programme gefunden!")
         sys.exit(1)
 
-    # Export
+    # PHASE 2: Fetch details
+    print("═══ PHASE 2: Details abrufen ═══\n")
+    programmes = fetch_details(session, all_programmes, fast_mode=args.fast)
+
+    if not programmes:
+        print("⚠️ Keine Programme verarbeitet!")
+        sys.exit(1)
+
+    # PHASE 3: Export
+    print(f"\n═══ PHASE 3: Export ({len(programmes)} Programme) ═══\n")
     if args.json_only:
-        export_to_json(progs, args.output)
+        export_to_json(programmes, args.output)
     else:
-        success = export_to_supabase(progs)
+        success = export_to_supabase(programmes)
         if args.json_backup or not success:
-            export_to_json(progs, args.output)
+            export_to_json(programmes, args.output)
 
     print("🎉 Fertig!")
 
