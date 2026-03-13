@@ -21,9 +21,9 @@ export default function Impressum() {
             <h2 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Angaben gemäß § 5 TMG</h2>
             <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
               {/* ========== HIER DEINE DATEN EINTRAGEN ========== */}
-              <strong>[VORNAME NACHNAME]</strong><br />
-              [Straße und Hausnummer]<br />
-              [PLZ] [Stadt]<br />
+              <strong>Anton Mishchenko</strong><br />
+              Augartenweg 16<br />
+              87437 Kempten (Allgäu)<br />
               Deutschland
             </p>
           </section>
@@ -31,20 +31,20 @@ export default function Impressum() {
           <section>
             <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-2">Kontakt</h2>
             <p className="text-[var(--text-secondary)] leading-relaxed">
-              E-Mail: <a href="mailto:[DEINE-EMAIL]" className="text-[var(--accent-text)] hover:text-[var(--accent-text)]">[DEINE-EMAIL]</a>
+              E-Mail: <a href="mailto:anton.mischenko321@proton.me" className="text-[var(--accent-text)] hover:text-[var(--accent-text)]">anton.mischenko321@proton.me</a>
             </p>
             {/*
               Falls du eine Telefonnummer angeben möchtest (optional, aber empfohlen):
-              <p className="text-[var(--text-secondary)]">Telefon: [DEINE TELEFONNUMMER]</p>
+              <p className="text-[var(--text-secondary)]">Telefon: </p>
             */}
           </section>
 
           <section>
             <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-2">Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>
             <p className="text-[var(--text-secondary)] leading-relaxed">
-              [VORNAME NACHNAME]<br />
-              [Straße und Hausnummer]<br />
-              [PLZ] [Stadt]
+              Anton Mishchenko<br />
+              Augartenweg 16<br />
+              87437 Kempten (Allgäu)
             </p>
           </section>
 

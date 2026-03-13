@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
-import FilterBar from './components/FilterBar';
+import FilterSidebar from './components/FilterSidebar';
 import ResultCard from './components/ResultCard';
 import DetailPanel from './components/DetailPanel';
 
@@ -11,11 +11,7 @@ const PER_PAGE = 20;
 
 export default function Home() {
   const [filters, setFilters] = useState({
-    bundesland: '',
-    phase: '',
-    groesse: '',
-    branche: '',
-    q: '',
+    bundesland: '', phase: '', groesse: '', branche: '', q: '',
   });
   const [results, setResults] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -56,10 +52,11 @@ export default function Home() {
 
   useEffect(() => { doSearch(1); }, []);
 
+  // Auto-search on filter change
   useEffect(() => {
     const timer = setTimeout(() => {
       if (searched) doSearch(1);
-    }, 100);
+    }, 150);
     return () => clearTimeout(timer);
   }, [filters.bundesland, filters.phase, filters.groesse, filters.branche]);
 
@@ -86,155 +83,172 @@ export default function Home() {
     <main className="min-h-screen relative z-10">
       <Header />
 
-      {/* Hero area */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 sm:pt-12 pb-2">
-        <h2 className="text-2xl sm:text-3xl font-bold mb-1.5" style={{ color: 'var(--text-primary)' }}>
-          Förderprogramme finden
-        </h2>
-        <p className="text-sm sm:text-base mb-6" style={{ color: 'var(--text-secondary)' }}>
-          Durchsuche über 1.400 Programme von Bund, Ländern und EU.
-        </p>
-      </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-6">
+        {/* Desktop + Mobile: sidebar + content layout */}
+        <div className="flex gap-6">
+          {/* Sidebar (desktop) + Mobile filters */}
+          <FilterSidebar
+            filters={filters}
+            onChange={setFilters}
+            onSearch={() => doSearch(1)}
+            loading={loading}
+          />
 
-      {/* Content */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-6">
-        <FilterBar
-          filters={filters}
-          onChange={setFilters}
-          onSearch={() => doSearch(1)}
-          loading={loading}
-          resultCount={totalCount}
-        />
-
-        {/* Result info */}
-        {searched && !error && (
-          <div className="flex items-center justify-between mt-6 mb-3">
-            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-              <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{totalCount}</span>
-              {' '}Programm{totalCount !== 1 ? 'e' : ''}
-              {totalPages > 1 && (
-                <span style={{ color: 'var(--text-muted)' }}> · Seite {page} von {totalPages}</span>
-              )}
-              {activeFilterCount > 0 && (
-                <span style={{ color: 'var(--text-muted)' }}> · {activeFilterCount} Filter</span>
-              )}
-            </p>
-            {activeFilterCount > 0 && (
-              <button
-                onClick={() => setFilters({ bundesland: '', phase: '', groesse: '', branche: '', q: '' })}
-                className="text-xs underline underline-offset-2 transition-colors"
-                style={{ color: 'var(--text-muted)' }}
+          {/* Main content */}
+          <div className="flex-1 min-w-0">
+            {/* Desktop search bar */}
+            <div className="hidden lg:block mb-5">
+              <div
+                className="flex gap-3 rounded-2xl p-4"
+                style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)' }}
               >
-                Zurücksetzen
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Error */}
-        {error && (
-          <div className="mt-6 rounded-2xl p-4 sm:p-5" style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-            <p className="text-sm font-medium" style={{ color: '#fca5a5' }}>Fehler beim Laden</p>
-            <p className="text-sm mt-1" style={{ color: '#f87171' }}>{error}</p>
-          </div>
-        )}
-
-        {/* Loading Skeleton */}
-        {loading && results.length === 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-3">
-            {[1, 2, 3, 4].map(i => (
-              <div key={i} className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)' }}>
-                <div className="skeleton h-5 w-20 mb-3" />
-                <div className="skeleton h-5 w-3/4 mb-2" />
-                <div className="skeleton h-4 w-1/2 mb-3" />
-                <div className="skeleton h-4 w-full mb-1" />
-                <div className="skeleton h-4 w-2/3" />
+                <input
+                  type="text"
+                  value={filters.q}
+                  onChange={(e) => setFilters({ ...filters, q: e.target.value })}
+                  onKeyDown={(e) => e.key === 'Enter' && doSearch(1)}
+                  placeholder="Förderprogramm suchen..."
+                  className="flex-1 px-4 py-2.5 text-sm rounded-xl"
+                  style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', color: 'var(--text-primary)' }}
+                />
+                <button
+                  onClick={() => doSearch(1)}
+                  disabled={loading}
+                  className="px-6 py-2.5 font-medium text-sm rounded-xl transition-all shrink-0 disabled:opacity-50"
+                  style={{ background: 'linear-gradient(135deg, var(--accent-start), var(--accent-end))', color: '#0f0f13' }}
+                >
+                  {loading ? (
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                  ) : 'Suchen'}
+                </button>
               </div>
-            ))}
-          </div>
-        )}
+            </div>
 
-        {/* Results */}
-        {!error && results.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-3">
-            {results.map((programm, i) => (
-              <ResultCard key={programm.id} programm={programm} index={i} onClick={setSelectedProgramm} />
-            ))}
-          </div>
-        )}
-
-        {/* Pagination */}
-        {totalPages > 1 && !error && (
-          <nav className="mt-8 flex items-center justify-center gap-1.5" aria-label="Seitennavigation">
-            <button
-              onClick={() => handlePageChange(page - 1)}
-              disabled={page === 1}
-              className="px-3 py-2 text-sm rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-              style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', color: 'var(--text-secondary)' }}
-            >
-              ‹
-            </button>
-
-            {getPageNumbers()[0] > 1 && (
-              <>
-                <button onClick={() => handlePageChange(1)} className="px-3 py-2 text-sm rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', color: 'var(--text-secondary)' }}>1</button>
-                {getPageNumbers()[0] > 2 && <span className="px-1.5 text-sm" style={{ color: 'var(--text-muted)' }}>…</span>}
-              </>
+            {/* Result info */}
+            {searched && !error && (
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{totalCount}</span>
+                  {' '}Programm{totalCount !== 1 ? 'e' : ''}
+                  {totalPages > 1 && (
+                    <span style={{ color: 'var(--text-muted)' }}> · Seite {page}/{totalPages}</span>
+                  )}
+                </p>
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={() => setFilters({ bundesland: '', phase: '', groesse: '', branche: '', q: '' })}
+                    className="text-xs underline underline-offset-2"
+                    style={{ color: 'var(--text-muted)' }}
+                  >
+                    Alle zurücksetzen
+                  </button>
+                )}
+              </div>
             )}
 
-            {getPageNumbers().map(p => (
-              <button
-                key={p}
-                onClick={() => handlePageChange(p)}
-                className="px-3 py-2 text-sm rounded-xl transition-all"
-                style={{
-                  background: p === page ? 'linear-gradient(135deg, var(--accent-start), var(--accent-end))' : 'var(--bg-card)',
-                  border: p === page ? 'none' : '1px solid var(--border-default)',
-                  color: p === page ? '#0f0f13' : 'var(--text-secondary)',
-                  fontWeight: p === page ? '600' : '400',
-                }}
-              >
-                {p}
-              </button>
-            ))}
-
-            {getPageNumbers()[getPageNumbers().length - 1] < totalPages && (
-              <>
-                {getPageNumbers()[getPageNumbers().length - 1] < totalPages - 1 && <span className="px-1.5 text-sm" style={{ color: 'var(--text-muted)' }}>…</span>}
-                <button onClick={() => handlePageChange(totalPages)} className="px-3 py-2 text-sm rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', color: 'var(--text-secondary)' }}>{totalPages}</button>
-              </>
+            {/* Error */}
+            {error && (
+              <div className="rounded-2xl p-4" style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                <p className="text-sm font-medium" style={{ color: '#fca5a5' }}>Fehler beim Laden</p>
+                <p className="text-sm mt-1" style={{ color: '#f87171' }}>{error}</p>
+              </div>
             )}
 
-            <button
-              onClick={() => handlePageChange(page + 1)}
-              disabled={page === totalPages}
-              className="px-3 py-2 text-sm rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-              style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', color: 'var(--text-secondary)' }}
-            >
-              ›
-            </button>
-          </nav>
-        )}
+            {/* Loading */}
+            {loading && results.length === 0 && (
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+                {[1, 2, 3, 4].map(i => (
+                  <div key={i} className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)' }}>
+                    <div className="skeleton h-5 w-20 mb-3" />
+                    <div className="skeleton h-5 w-3/4 mb-2" />
+                    <div className="skeleton h-4 w-1/2 mb-3" />
+                    <div className="skeleton h-4 w-full mb-1" />
+                    <div className="skeleton h-4 w-2/3" />
+                  </div>
+                ))}
+              </div>
+            )}
 
-        {/* No results */}
-        {searched && !error && results.length === 0 && !loading && (
-          <div className="mt-10 text-center py-16">
-            <div className="text-5xl mb-4">🔍</div>
-            <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Keine Programme gefunden</h3>
-            <p className="text-sm max-w-sm mx-auto mb-4" style={{ color: 'var(--text-secondary)' }}>
-              Versuche andere Filter oder entferne Einschränkungen.
-            </p>
-            <button
-              onClick={() => setFilters({ bundesland: '', phase: '', groesse: '', branche: '', q: '' })}
-              className="px-4 py-2.5 text-sm font-medium rounded-xl transition-all"
-              style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', color: 'var(--text-secondary)' }}
-            >
-              Alle Filter zurücksetzen
-            </button>
+            {/* Results */}
+            {!error && results.length > 0 && (
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+                {results.map((programm, i) => (
+                  <ResultCard key={programm.id} programm={programm} index={i} onClick={setSelectedProgramm} />
+                ))}
+              </div>
+            )}
+
+            {/* Pagination */}
+            {totalPages > 1 && !error && (
+              <nav className="mt-8 flex items-center justify-center gap-1.5" aria-label="Seitennavigation">
+                <button
+                  onClick={() => handlePageChange(page - 1)}
+                  disabled={page === 1}
+                  className="px-3 py-2 text-sm rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                  style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', color: 'var(--text-secondary)' }}
+                >‹</button>
+
+                {getPageNumbers()[0] > 1 && (
+                  <>
+                    <button onClick={() => handlePageChange(1)} className="px-3 py-2 text-sm rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', color: 'var(--text-secondary)' }}>1</button>
+                    {getPageNumbers()[0] > 2 && <span className="px-1.5 text-sm" style={{ color: 'var(--text-muted)' }}>…</span>}
+                  </>
+                )}
+
+                {getPageNumbers().map(p => (
+                  <button
+                    key={p}
+                    onClick={() => handlePageChange(p)}
+                    className="px-3 py-2 text-sm rounded-xl transition-all"
+                    style={{
+                      background: p === page ? 'linear-gradient(135deg, var(--accent-start), var(--accent-end))' : 'var(--bg-card)',
+                      border: p === page ? 'none' : '1px solid var(--border-default)',
+                      color: p === page ? '#0f0f13' : 'var(--text-secondary)',
+                      fontWeight: p === page ? '600' : '400',
+                    }}
+                  >{p}</button>
+                ))}
+
+                {getPageNumbers()[getPageNumbers().length - 1] < totalPages && (
+                  <>
+                    {getPageNumbers()[getPageNumbers().length - 1] < totalPages - 1 && <span className="px-1.5 text-sm" style={{ color: 'var(--text-muted)' }}>…</span>}
+                    <button onClick={() => handlePageChange(totalPages)} className="px-3 py-2 text-sm rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', color: 'var(--text-secondary)' }}>{totalPages}</button>
+                  </>
+                )}
+
+                <button
+                  onClick={() => handlePageChange(page + 1)}
+                  disabled={page === totalPages}
+                  className="px-3 py-2 text-sm rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                  style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', color: 'var(--text-secondary)' }}
+                >›</button>
+              </nav>
+            )}
+
+            {/* No results */}
+            {searched && !error && results.length === 0 && !loading && (
+              <div className="text-center py-16">
+                <div className="text-5xl mb-4">🔍</div>
+                <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Keine Programme gefunden</h3>
+                <p className="text-sm max-w-sm mx-auto mb-4" style={{ color: 'var(--text-secondary)' }}>
+                  Versuche andere Filter oder entferne Einschränkungen.
+                </p>
+                <button
+                  onClick={() => setFilters({ bundesland: '', phase: '', groesse: '', branche: '', q: '' })}
+                  className="px-4 py-2.5 text-sm font-medium rounded-xl"
+                  style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', color: 'var(--text-secondary)' }}
+                >
+                  Alle Filter zurücksetzen
+                </button>
+              </div>
+            )}
+
+            <Footer />
           </div>
-        )}
-
-        <Footer />
+        </div>
       </div>
 
       {/* Detail Panel */}

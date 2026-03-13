@@ -111,11 +111,11 @@ export default function Datenschutz() {
             </p>
             <p className="text-[var(--text-secondary)] leading-relaxed">
               {/* ========== HIER DEINE DATEN EINTRAGEN ========== */}
-              <strong>[VORNAME NACHNAME]</strong><br />
-              [Straße und Hausnummer]<br />
-              [PLZ] [Stadt]<br />
+              <strong>Anton Mishchenko</strong><br />
+              Augartenweg 16<br />
+              87437 Kempten (Allgäu)<br />
               Deutschland<br /><br />
-              E-Mail: [DEINE-EMAIL]
+              E-Mail: anton.mischenko321@proton.me
             </p>
             <p className="text-[var(--text-secondary)] leading-relaxed">
               Verantwortliche Stelle ist die natürliche oder juristische Person, die allein oder

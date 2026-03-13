@@ -2,9 +2,41 @@
 
 import { BUNDESLAENDER, FOERDERARTEN, formatEuro } from '@/lib/constants';
 
+/**
+ * Cleans up scraper fallback descriptions like:
+ * "Förderbereich: XYZ. Berechtigt: ABC."
+ * → renders as nice tag chips instead of ugly text
+ */
+function parseDescription(text) {
+  if (!text) return { isClean: false, text: '', tags: [] };
+
+  // Detect scraper fallback pattern
+  const isFallback = /^(Förderbereich:|Berechtigt:|Wer wird gefördert|Was wird gefördert)/.test(text);
+
+  if (!isFallback) return { isClean: true, text, tags: [] };
+
+  // Parse into tags
+  const tags = [];
+  const parts = text.split(/\.\s*/);
+  for (const part of parts) {
+    const cleaned = part
+      .replace(/^Förderbereich:\s*/, '')
+      .replace(/^Berechtigt:\s*/, '')
+      .replace(/^Wer wird gefördert\??\s*/, '')
+      .replace(/^Was wird gefördert\??\s*/, '')
+      .trim();
+    if (cleaned && cleaned.length > 2) {
+      tags.push(cleaned);
+    }
+  }
+
+  return { isClean: false, text: '', tags };
+}
+
 export default function ResultCard({ programm, index, onClick }) {
   const art = FOERDERARTEN[programm.foerderart] || FOERDERARTEN.zuschuss;
   const hasVolumen = programm.volumen_min_eur || programm.volumen_max_eur;
+  const desc = parseDescription(programm.beschreibung);
 
   return (
     <button
@@ -40,10 +72,28 @@ export default function ResultCard({ programm, index, onClick }) {
         {programm.foerdergeber}
       </p>
 
-      {/* Description */}
-      <p className="text-sm leading-relaxed mb-3 line-clamp-2" style={{ color: 'var(--text-secondary)' }}>
-        {programm.beschreibung}
-      </p>
+      {/* Description – clean text or fallback chips */}
+      {desc.isClean ? (
+        <p className="text-sm leading-relaxed mb-3 line-clamp-2" style={{ color: 'var(--text-secondary)' }}>
+          {desc.text}
+        </p>
+      ) : desc.tags.length > 0 ? (
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {desc.tags.map((tag, i) => (
+            <span
+              key={i}
+              className="text-xs px-2.5 py-1 rounded-lg line-clamp-1"
+              style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)', maxWidth: '100%' }}
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>
+          Keine Beschreibung verfügbar
+        </p>
+      )}
 
       {/* Tags */}
       <div className="flex flex-wrap gap-1.5">

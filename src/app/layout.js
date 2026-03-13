@@ -1,11 +1,8 @@
 import './globals.css';
 import { IBM_Plex_Sans } from 'next/font/google';
 import ErrorBoundary from './components/ErrorBoundary';
+import ThemeProvider from './components/ThemeProvider';
 
-/**
- * DSGVO: next/font hostet die Fonts automatisch self-hosted bei Vercel.
- * Keine externen Requests an Google-Server → kein Datenschutz-Problem.
- */
 const ibmPlexSans = IBM_Plex_Sans({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
@@ -28,10 +25,12 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="de" className={ibmPlexSans.variable} suppressHydrationWarning>
-      <body className="min-h-screen antialiased noise-bg" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
-        <ErrorBoundary>
-          {children}
-        </ErrorBoundary>
+      <body className="min-h-screen antialiased" style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+        <ThemeProvider>
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
+        </ThemeProvider>
       </body>
     </html>
   );
