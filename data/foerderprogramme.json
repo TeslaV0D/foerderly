@@ -1,0 +1,2436 @@
+{
+  "programme": [
+    {
+      "id": 1,
+      "name": "EXIST-Gründerstipendium",
+      "kurzname": "EXIST",
+      "beschreibung": "Unterstützt Studierende, Absolvent:innen und Wissenschaftler:innen aus Hochschulen bei der Vorbereitung technologieorientierter Existenzgründungen. Stipendium für max. 1 Jahr zur Sicherung des Lebensunterhalts plus Sachkosten und Coaching.",
+      "foerdergeber": "BMWK",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 1000,
+      "volumen_max_eur": 3000,
+      "eigenanteil_prozent": 0,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.exist.de/",
+      "url_quelle": "https://www.foerderdatenbank.de/FDB/Content/DE/Foerderprogramm/Bund/BMWi/exist-gruenderstipendium.html",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BUND"
+      ],
+      "phasen": [
+        "ideation",
+        "gruendung"
+      ],
+      "groessen": [
+        "solo",
+        "mikro"
+      ],
+      "branchen": [
+        {
+          "id": 16,
+          "name": "Branchenübergreifend",
+          "slug": "branchenuebergreifend"
+        },
+        {
+          "id": 3,
+          "name": "Forschung & Entwicklung",
+          "slug": "forschung-entwicklung"
+        },
+        {
+          "id": 7,
+          "name": "IT & Software",
+          "slug": "it-software"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "EXIST-Forschungstransfer",
+      "kurzname": "EXIST-FT",
+      "beschreibung": "Fördert herausragende forschungsbasierte Gründungsvorhaben mit aufwändigen Entwicklungsarbeiten. Phase I: Entwicklung (max. 18 Monate), Phase II: Gründung und Geschäftsaufnahme (max. 18 Monate).",
+      "foerdergeber": "BMWK",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 70000,
+      "volumen_max_eur": 250000,
+      "eigenanteil_prozent": 0,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.exist.de/",
+      "url_quelle": "https://www.foerderdatenbank.de/FDB/Content/DE/Foerderprogramm/Bund/BMWi/exist-forschungstransfer.html",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BUND"
+      ],
+      "phasen": [
+        "ideation",
+        "gruendung"
+      ],
+      "groessen": [
+        "solo",
+        "mikro",
+        "klein"
+      ],
+      "branchen": [
+        {
+          "id": 3,
+          "name": "Forschung & Entwicklung",
+          "slug": "forschung-entwicklung"
+        },
+        {
+          "id": 7,
+          "name": "IT & Software",
+          "slug": "it-software"
+        },
+        {
+          "id": 4,
+          "name": "Gesundheit & Medizin",
+          "slug": "gesundheit-medizin"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "EXIST Women",
+      "kurzname": "EXIST Women",
+      "beschreibung": "Förderprogramm speziell für Gründerinnen aus der Wissenschaft. Unterstützt Frauen bei der Vorbereitung innovativer Gründungsvorhaben mit Stipendium, Coaching und Netzwerk.",
+      "foerdergeber": "BMWK",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 1000,
+      "volumen_max_eur": 2000,
+      "eigenanteil_prozent": 0,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.exist.de/",
+      "url_quelle": "https://www.exist.de/EXIST/Navigation/DE/EXIST-Women/exist-women.html",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BUND"
+      ],
+      "phasen": [
+        "ideation",
+        "gruendung"
+      ],
+      "groessen": [
+        "solo"
+      ],
+      "branchen": [
+        {
+          "id": 16,
+          "name": "Branchenübergreifend",
+          "slug": "branchenuebergreifend"
+        },
+        {
+          "id": 3,
+          "name": "Forschung & Entwicklung",
+          "slug": "forschung-entwicklung"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Gründungszuschuss",
+      "kurzname": "Gründungszuschuss",
+      "beschreibung": "Unterstützt Arbeitslose bei der Aufnahme einer selbständigen Tätigkeit. Phase 1: 6 Monate ALG I + 300 EUR/Monat. Phase 2: 9 Monate 300 EUR/Monat. Voraussetzung: mind. 150 Tage Restanspruch ALG I.",
+      "foerdergeber": "Bundesagentur für Arbeit",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 300,
+      "volumen_max_eur": 2500,
+      "eigenanteil_prozent": 0,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.arbeitsagentur.de/arbeitslos-arbeit-finden/gruendungszuschuss",
+      "url_quelle": "https://www.foerderdatenbank.de/FDB/Content/DE/Foerderprogramm/Bund/BA/gruendungszuschuss.html",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BUND"
+      ],
+      "phasen": [
+        "gruendung"
+      ],
+      "groessen": [
+        "solo"
+      ],
+      "branchen": [
+        {
+          "id": 16,
+          "name": "Branchenübergreifend",
+          "slug": "branchenuebergreifend"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Einstiegsgeld",
+      "kurzname": "Einstiegsgeld",
+      "beschreibung": "Fördert Bezieher:innen von Bürgergeld bei der Aufnahme einer selbständigen Tätigkeit. Dauer: max. 24 Monate. Höhe wird individuell festgelegt, orientiert an der Regelleistung.",
+      "foerdergeber": "Bundesagentur für Arbeit",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 100,
+      "volumen_max_eur": 500,
+      "eigenanteil_prozent": 0,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.arbeitsagentur.de/",
+      "url_quelle": "https://www.foerderdatenbank.de/FDB/Content/DE/Foerderprogramm/Bund/BA/einstiegsgeld.html",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BUND"
+      ],
+      "phasen": [
+        "gruendung"
+      ],
+      "groessen": [
+        "solo"
+      ],
+      "branchen": [
+        {
+          "id": 16,
+          "name": "Branchenübergreifend",
+          "slug": "branchenuebergreifend"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "ERP-Gründerkredit – StartGeld",
+      "kurzname": "KfW-StartGeld",
+      "beschreibung": "Zinsgünstiger Kredit bis 125.000 EUR für Existenzgründungen und junge Unternehmen (bis 5 Jahre). Für Investitionen und Betriebsmittel. KfW übernimmt 80% Haftungsfreistellung.",
+      "foerdergeber": "KfW Bankengruppe",
+      "foerderart": "kredit",
+      "volumen_min_eur": 5000,
+      "volumen_max_eur": 125000,
+      "eigenanteil_prozent": 0,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.kfw.de/",
+      "url_quelle": "https://www.foerderdatenbank.de/FDB/Content/DE/Foerderprogramm/Bund/BMWi/erp-gruenderkredit-startgeld.html",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BUND"
+      ],
+      "phasen": [
+        "gruendung",
+        "fruehphase"
+      ],
+      "groessen": [
+        "solo",
+        "mikro",
+        "klein"
+      ],
+      "branchen": [
+        {
+          "id": 16,
+          "name": "Branchenübergreifend",
+          "slug": "branchenuebergreifend"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "ERP-Förderkredit Gründung und Nachfolge",
+      "kurzname": "ERP-Förderkredit",
+      "beschreibung": "Finanziert Gründungen, Übernahmen und tätigkeitsbezogene Investitionen mit bis zu 25 Mio. EUR. Für Unternehmen bis 5 Jahre nach Gründung. Risikoübernahme bis 90%.",
+      "foerdergeber": "KfW Bankengruppe",
+      "foerderart": "kredit",
+      "volumen_min_eur": 25000,
+      "volumen_max_eur": 25000000,
+      "eigenanteil_prozent": 0,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.kfw.de/",
+      "url_quelle": "https://www.foerderdatenbank.de/FDB/Content/DE/Foerderprogramm/Bund/KfW/erp-foerderkredit-gruendung-und-nachfolge.html",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BUND"
+      ],
+      "phasen": [
+        "gruendung",
+        "fruehphase"
+      ],
+      "groessen": [
+        "solo",
+        "mikro",
+        "klein",
+        "mittel"
+      ],
+      "branchen": [
+        {
+          "id": 16,
+          "name": "Branchenübergreifend",
+          "slug": "branchenuebergreifend"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "name": "ERP-Kapital für Gründung",
+      "kurzname": "ERP-Kapital",
+      "beschreibung": "Nachrangdarlehen zur Stärkung der Eigenkapitalbasis. Verbessert das Rating bei der Hausbank. Bis 500.000 EUR, 15% Eigenanteil erforderlich.",
+      "foerdergeber": "KfW Bankengruppe",
+      "foerderart": "kredit",
+      "volumen_min_eur": 10000,
+      "volumen_max_eur": 500000,
+      "eigenanteil_prozent": 15,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.kfw.de/",
+      "url_quelle": "https://www.foerderdatenbank.de/FDB/Content/DE/Foerderprogramm/Bund/BMWi/erp-kapital-fuer-gruendung.html",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BUND"
+      ],
+      "phasen": [
+        "gruendung",
+        "fruehphase"
+      ],
+      "groessen": [
+        "solo",
+        "mikro",
+        "klein",
+        "mittel"
+      ],
+      "branchen": [
+        {
+          "id": 16,
+          "name": "Branchenübergreifend",
+          "slug": "branchenuebergreifend"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "name": "KfW-Förderkredit großer Mittelstand",
+      "kurzname": "KfW-Großer Mittelstand",
+      "beschreibung": "Finanzierung für etablierte mittelständische Unternehmen mit einem Gruppenumsatz bis 500 Mio. EUR. Für Investitionen und Betriebsmittel.",
+      "foerdergeber": "KfW Bankengruppe",
+      "foerderart": "kredit",
+      "volumen_min_eur": 25000,
+      "volumen_max_eur": 25000000,
+      "eigenanteil_prozent": 0,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.kfw.de/",
+      "url_quelle": "https://www.kfw.de/inlandsfoerderung/Unternehmen/",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BUND"
+      ],
+      "phasen": [
+        "wachstum",
+        "etabliert"
+      ],
+      "groessen": [
+        "mittel"
+      ],
+      "branchen": [
+        {
+          "id": 16,
+          "name": "Branchenübergreifend",
+          "slug": "branchenuebergreifend"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "name": "Mikrokreditfonds Deutschland",
+      "kurzname": "Mikrokredit",
+      "beschreibung": "Kleinkredite bis 25.000 EUR für Gründer:innen und Kleinstunternehmen ohne Zugang zu Bankkrediten. Vergabe über akkreditierte Mikrofinanzinstitute.",
+      "foerdergeber": "BMAS",
+      "foerderart": "kredit",
+      "volumen_min_eur": 1000,
+      "volumen_max_eur": 25000,
+      "eigenanteil_prozent": 0,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.mein-mikrokredit.de/",
+      "url_quelle": "https://www.foerderdatenbank.de/FDB/Content/DE/Foerderprogramm/Bund/BMAS/mikrokreditfonds.html",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BUND"
+      ],
+      "phasen": [
+        "gruendung",
+        "fruehphase"
+      ],
+      "groessen": [
+        "solo",
+        "mikro"
+      ],
+      "branchen": [
+        {
+          "id": 16,
+          "name": "Branchenübergreifend",
+          "slug": "branchenuebergreifend"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "name": "BAFA-Förderung unternehmerischen Know-hows",
+      "kurzname": "BAFA-Beratung",
+      "beschreibung": "Zuschuss zu Beratungskosten für KMU. Junge Unternehmen (bis 2 J.) erhalten bis 80%, Bestandsunternehmen bis 50%. Max. Bemessungsgrundlage 3.500 EUR für junge Unternehmen.",
+      "foerdergeber": "BAFA",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 500,
+      "volumen_max_eur": 2800,
+      "eigenanteil_prozent": 20,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.bafa.de/",
+      "url_quelle": "https://www.foerderdatenbank.de/FDB/Content/DE/Foerderprogramm/Bund/BAFA/bafa-unternehmensberatung.html",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BUND"
+      ],
+      "phasen": [
+        "gruendung",
+        "fruehphase",
+        "wachstum"
+      ],
+      "groessen": [
+        "solo",
+        "mikro",
+        "klein",
+        "mittel"
+      ],
+      "branchen": [
+        {
+          "id": 16,
+          "name": "Branchenübergreifend",
+          "slug": "branchenuebergreifend"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "name": "go-digital",
+      "kurzname": "go-digital",
+      "beschreibung": "Fördert KMU und Handwerksbetriebe bei der Digitalisierung. Module: Digitalisierte Geschäftsprozesse, Digitale Markterschließung, IT-Sicherheit. Bis 50% Zuschuss, max. 16.500 EUR.",
+      "foerdergeber": "BMWK",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 5000,
+      "volumen_max_eur": 16500,
+      "eigenanteil_prozent": 50,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.innovation-beratung-foerderung.de/",
+      "url_quelle": "https://www.foerderdatenbank.de/FDB/Content/DE/Foerderprogramm/Bund/BMWi/go-digital.html",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BUND"
+      ],
+      "phasen": [
+        "fruehphase",
+        "wachstum",
+        "etabliert"
+      ],
+      "groessen": [
+        "mikro",
+        "klein",
+        "mittel"
+      ],
+      "branchen": [
+        {
+          "id": 1,
+          "name": "Digitalisierung",
+          "slug": "digitalisierung"
+        },
+        {
+          "id": 7,
+          "name": "IT & Software",
+          "slug": "it-software"
+        },
+        {
+          "id": 5,
+          "name": "Handwerk",
+          "slug": "handwerk"
+        },
+        {
+          "id": 6,
+          "name": "Handel",
+          "slug": "handel"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "name": "go-inno",
+      "kurzname": "go-inno",
+      "beschreibung": "Fördert externe Innovationsberatung für KMU. Autorisierte Beratungsunternehmen unterstützen bei Innovations- und Technologiemanagement. Bis 50% Zuschuss.",
+      "foerdergeber": "BMWK",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 2000,
+      "volumen_max_eur": 16500,
+      "eigenanteil_prozent": 50,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.innovation-beratung-foerderung.de/",
+      "url_quelle": "https://www.foerderdatenbank.de/FDB/Content/DE/Foerderprogramm/Bund/BMWi/go-inno.html",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BUND"
+      ],
+      "phasen": [
+        "fruehphase",
+        "wachstum",
+        "etabliert"
+      ],
+      "groessen": [
+        "mikro",
+        "klein",
+        "mittel"
+      ],
+      "branchen": [
+        {
+          "id": 3,
+          "name": "Forschung & Entwicklung",
+          "slug": "forschung-entwicklung"
+        },
+        {
+          "id": 11,
+          "name": "Produktion & Industrie",
+          "slug": "produktion-industrie"
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "name": "Zentrales Innovationsprogramm Mittelstand",
+      "kurzname": "ZIM",
+      "beschreibung": "Fördert F&E-Projekte mittelständischer Unternehmen. Einzelprojekte, Kooperationsprojekte, Innovationsnetzwerke. Bis 60% Zuschuss, max. 550.000 EUR.",
+      "foerdergeber": "BMWK",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 20000,
+      "volumen_max_eur": 550000,
+      "eigenanteil_prozent": 40,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.zim.de/",
+      "url_quelle": "https://www.foerderdatenbank.de/FDB/Content/DE/Foerderprogramm/Bund/BMWi/zentrales-innovationsprogramm-mittelstand-zim.html",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BUND"
+      ],
+      "phasen": [
+        "fruehphase",
+        "wachstum",
+        "etabliert"
+      ],
+      "groessen": [
+        "mikro",
+        "klein",
+        "mittel"
+      ],
+      "branchen": [
+        {
+          "id": 3,
+          "name": "Forschung & Entwicklung",
+          "slug": "forschung-entwicklung"
+        },
+        {
+          "id": 7,
+          "name": "IT & Software",
+          "slug": "it-software"
+        },
+        {
+          "id": 11,
+          "name": "Produktion & Industrie",
+          "slug": "produktion-industrie"
+        },
+        {
+          "id": 4,
+          "name": "Gesundheit & Medizin",
+          "slug": "gesundheit-medizin"
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "name": "INVEST – Zuschuss für Wagniskapital",
+      "kurzname": "INVEST",
+      "beschreibung": "Erleichtert Startups die Suche nach Business Angels. Investoren erhalten 25% Erwerbszuschuss (max. 500.000 EUR Bemessungsgrundlage) und 25% Exitzuschuss.",
+      "foerdergeber": "BMWK / BAFA",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 10000,
+      "volumen_max_eur": 125000,
+      "eigenanteil_prozent": 75,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.bafa.de/",
+      "url_quelle": "https://www.foerderdatenbank.de/FDB/Content/DE/Foerderprogramm/Bund/BAFA/invest-zuschuss-fuer-wagniskapital.html",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BUND"
+      ],
+      "phasen": [
+        "gruendung",
+        "fruehphase",
+        "wachstum"
+      ],
+      "groessen": [
+        "mikro",
+        "klein"
+      ],
+      "branchen": [
+        {
+          "id": 16,
+          "name": "Branchenübergreifend",
+          "slug": "branchenuebergreifend"
+        },
+        {
+          "id": 7,
+          "name": "IT & Software",
+          "slug": "it-software"
+        },
+        {
+          "id": 3,
+          "name": "Forschung & Entwicklung",
+          "slug": "forschung-entwicklung"
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "name": "Forschungszulage (steuerlich)",
+      "kurzname": "Forschungszulage",
+      "beschreibung": "Steuerliche Förderung für F&E-Vorhaben. 25% der förderfähigen Aufwendungen, max. 1 Mio. EUR/Jahr (für KMU: max. 2 Mio. EUR). Gilt für Grundlagenforschung, industrielle Forschung und experimentelle Entwicklung.",
+      "foerdergeber": "BMBF / Finanzamt",
+      "foerderart": "steuerlich",
+      "volumen_min_eur": 0,
+      "volumen_max_eur": 2000000,
+      "eigenanteil_prozent": 0,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.bescheinigung-forschungszulage.de/",
+      "url_quelle": "https://www.foerderdatenbank.de/FDB/Content/DE/Foerderprogramm/Bund/BMBF/forschungszulage.html",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BUND"
+      ],
+      "phasen": [
+        "fruehphase",
+        "wachstum",
+        "etabliert"
+      ],
+      "groessen": [
+        "mikro",
+        "klein",
+        "mittel"
+      ],
+      "branchen": [
+        {
+          "id": 3,
+          "name": "Forschung & Entwicklung",
+          "slug": "forschung-entwicklung"
+        },
+        {
+          "id": 7,
+          "name": "IT & Software",
+          "slug": "it-software"
+        },
+        {
+          "id": 11,
+          "name": "Produktion & Industrie",
+          "slug": "produktion-industrie"
+        },
+        {
+          "id": 4,
+          "name": "Gesundheit & Medizin",
+          "slug": "gesundheit-medizin"
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "name": "KMU-innovativ",
+      "kurzname": "KMU-innovativ",
+      "beschreibung": "BMBF-Förderinitiative für Spitzenforschung in KMU. Themenfelder: Bioökonomie, Elektronik, IKT, Medizintechnik, Materialforschung, Produktionstechnologie. Vereinfachtes Verfahren, schnelle Bewilligung.",
+      "foerdergeber": "BMBF",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 50000,
+      "volumen_max_eur": 500000,
+      "eigenanteil_prozent": 50,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.kmu-innovativ.de/",
+      "url_quelle": "https://www.foerderdatenbank.de/FDB/Content/DE/Foerderprogramm/Bund/BMBF/kmu-innovativ.html",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BUND"
+      ],
+      "phasen": [
+        "fruehphase",
+        "wachstum",
+        "etabliert"
+      ],
+      "groessen": [
+        "mikro",
+        "klein",
+        "mittel"
+      ],
+      "branchen": [
+        {
+          "id": 3,
+          "name": "Forschung & Entwicklung",
+          "slug": "forschung-entwicklung"
+        },
+        {
+          "id": 7,
+          "name": "IT & Software",
+          "slug": "it-software"
+        },
+        {
+          "id": 4,
+          "name": "Gesundheit & Medizin",
+          "slug": "gesundheit-medizin"
+        },
+        {
+          "id": 11,
+          "name": "Produktion & Industrie",
+          "slug": "produktion-industrie"
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "name": "Digital Jetzt",
+      "kurzname": "Digital Jetzt",
+      "beschreibung": "Zuschüsse für KMU zur Digitalisierung. Modul 1: Investitionen in digitale Technologien. Modul 2: Qualifizierung der Mitarbeitenden. Max. 50.000 EUR pro Modul.",
+      "foerdergeber": "BMWK",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 17000,
+      "volumen_max_eur": 50000,
+      "eigenanteil_prozent": 50,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.bmwk.de/Redaktion/DE/Dossier/digital-jetzt.html",
+      "url_quelle": "https://www.foerderdatenbank.de/FDB/Content/DE/Foerderprogramm/Bund/BMWi/digital-jetzt.html",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BUND"
+      ],
+      "phasen": [
+        "fruehphase",
+        "wachstum",
+        "etabliert"
+      ],
+      "groessen": [
+        "mikro",
+        "klein",
+        "mittel"
+      ],
+      "branchen": [
+        {
+          "id": 1,
+          "name": "Digitalisierung",
+          "slug": "digitalisierung"
+        },
+        {
+          "id": 7,
+          "name": "IT & Software",
+          "slug": "it-software"
+        },
+        {
+          "id": 16,
+          "name": "Branchenübergreifend",
+          "slug": "branchenuebergreifend"
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "name": "Innovationsprogramm für Geschäftsmodelle und Pionierlösungen",
+      "kurzname": "IGP",
+      "beschreibung": "Fördert innovative nicht-technische Geschäftsmodelle und Pionierlösungen. Ideal für soziale Innovationen, Plattformmodelle und Dienstleistungsinnovationen.",
+      "foerdergeber": "BMWK",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 50000,
+      "volumen_max_eur": 300000,
+      "eigenanteil_prozent": 50,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.innovation-beratung-foerderung.de/",
+      "url_quelle": "https://www.foerderdatenbank.de/FDB/Content/DE/Foerderprogramm/Bund/BMWi/igp.html",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BUND"
+      ],
+      "phasen": [
+        "gruendung",
+        "fruehphase",
+        "wachstum"
+      ],
+      "groessen": [
+        "mikro",
+        "klein",
+        "mittel"
+      ],
+      "branchen": [
+        {
+          "id": 16,
+          "name": "Branchenübergreifend",
+          "slug": "branchenuebergreifend"
+        },
+        {
+          "id": 12,
+          "name": "Sozialunternehmen",
+          "slug": "sozialunternehmen"
+        },
+        {
+          "id": 1,
+          "name": "Digitalisierung",
+          "slug": "digitalisierung"
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "name": "Bundesförderung für Energie- und Ressourceneffizienz (EEW)",
+      "kurzname": "EEW",
+      "beschreibung": "Fördert Unternehmen bei Investitionen in Energieeffizienz. 6 Module: Querschnittstechnologien, Prozesswärme, MSR-Technik, Energiebezogene Optimierung, Transformationspläne, Elektrifizierung.",
+      "foerdergeber": "BAFA / KfW",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 2000,
+      "volumen_max_eur": 15000000,
+      "eigenanteil_prozent": 40,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.bafa.de/",
+      "url_quelle": "https://www.foerderdatenbank.de/FDB/Content/DE/Foerderprogramm/Bund/BMWi/energieeffizienz-u-prozesswaerme-zuschuss-1.html",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BUND"
+      ],
+      "phasen": [
+        "fruehphase",
+        "wachstum",
+        "etabliert"
+      ],
+      "groessen": [
+        "mikro",
+        "klein",
+        "mittel"
+      ],
+      "branchen": [
+        {
+          "id": 2,
+          "name": "Energie & Umwelt",
+          "slug": "energie-umwelt"
+        },
+        {
+          "id": 11,
+          "name": "Produktion & Industrie",
+          "slug": "produktion-industrie"
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "name": "Umweltinnovationsprogramm",
+      "kurzname": "UIP",
+      "beschreibung": "Fördert erstmalige, großtechnische Anwendung innovativer Umwelttechnologien. Für Unternehmen, die mit Pilotprojekten neue Umweltstandards setzen.",
+      "foerdergeber": "BMUV / KfW",
+      "foerderart": "kredit",
+      "volumen_min_eur": 100000,
+      "volumen_max_eur": 10000000,
+      "eigenanteil_prozent": 30,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.umweltinnovationsprogramm.de/",
+      "url_quelle": "https://www.foerderdatenbank.de/FDB/Content/DE/Foerderprogramm/Bund/BMU/umweltinnovationsprogramm.html",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BUND"
+      ],
+      "phasen": [
+        "wachstum",
+        "etabliert"
+      ],
+      "groessen": [
+        "klein",
+        "mittel"
+      ],
+      "branchen": [
+        {
+          "id": 2,
+          "name": "Energie & Umwelt",
+          "slug": "energie-umwelt"
+        },
+        {
+          "id": 11,
+          "name": "Produktion & Industrie",
+          "slug": "produktion-industrie"
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "name": "Digitalbonus Bayern",
+      "kurzname": "Digitalbonus",
+      "beschreibung": "Fördert bayerische KMU bei der Digitalisierung. Standard: bis 10.000 EUR (50%). Plus: bis 50.000 EUR (50%) für besonders innovative IT-Projekte und IT-Sicherheit.",
+      "foerdergeber": "StMD Bayern",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 2000,
+      "volumen_max_eur": 50000,
+      "eigenanteil_prozent": 50,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.digitalbonus.bayern/",
+      "url_quelle": "https://www.foerderdatenbank.de/FDB/Content/DE/Foerderprogramm/Land/Bayern/digitalbonus.html",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BY"
+      ],
+      "phasen": [
+        "fruehphase",
+        "wachstum",
+        "etabliert"
+      ],
+      "groessen": [
+        "mikro",
+        "klein",
+        "mittel"
+      ],
+      "branchen": [
+        {
+          "id": 1,
+          "name": "Digitalisierung",
+          "slug": "digitalisierung"
+        },
+        {
+          "id": 7,
+          "name": "IT & Software",
+          "slug": "it-software"
+        },
+        {
+          "id": 5,
+          "name": "Handwerk",
+          "slug": "handwerk"
+        },
+        {
+          "id": 6,
+          "name": "Handel",
+          "slug": "handel"
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "name": "Start?Zuschuss! Bayern",
+      "kurzname": "Start?Zuschuss!",
+      "beschreibung": "Anlaufförderung für die 20 innovativsten Digitalisierungs-Gründungen in Bayern. 50% Zuschuss, max. 36.000 EUR über 12 Monate. Jury-Auswahl im Wettbewerb.",
+      "foerdergeber": "StMWi Bayern",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 5000,
+      "volumen_max_eur": 36000,
+      "eigenanteil_prozent": 50,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.gruenderland.bayern/",
+      "url_quelle": "https://www.foerderdatenbank.de/FDB/Content/DE/Foerderprogramm/Land/Bayern/neugruendungen-im-bereich-digitalisierung.html",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BY"
+      ],
+      "phasen": [
+        "ideation",
+        "gruendung"
+      ],
+      "groessen": [
+        "solo",
+        "mikro"
+      ],
+      "branchen": [
+        {
+          "id": 1,
+          "name": "Digitalisierung",
+          "slug": "digitalisierung"
+        },
+        {
+          "id": 7,
+          "name": "IT & Software",
+          "slug": "it-software"
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "name": "Bayerisches Technologieförderungs-Programm",
+      "kurzname": "BayTP",
+      "beschreibung": "Fördert technologische F&E-Vorhaben bayerischer KMU. Bis 50% der Ausgaben, max. 400.000 EUR. Einzel- und Kooperationsprojekte.",
+      "foerdergeber": "StMWi Bayern",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 25000,
+      "volumen_max_eur": 400000,
+      "eigenanteil_prozent": 50,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.stmwi.bayern.de/",
+      "url_quelle": "https://www.foerderdatenbank.de/FDB/Content/DE/Foerderprogramm/Land/Bayern/baytp.html",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BY"
+      ],
+      "phasen": [
+        "fruehphase",
+        "wachstum",
+        "etabliert"
+      ],
+      "groessen": [
+        "mikro",
+        "klein",
+        "mittel"
+      ],
+      "branchen": [
+        {
+          "id": 3,
+          "name": "Forschung & Entwicklung",
+          "slug": "forschung-entwicklung"
+        },
+        {
+          "id": 7,
+          "name": "IT & Software",
+          "slug": "it-software"
+        },
+        {
+          "id": 11,
+          "name": "Produktion & Industrie",
+          "slug": "produktion-industrie"
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "name": "BayTOU – Technologieorientierte Unternehmensgründungen",
+      "kurzname": "BayTOU",
+      "beschreibung": "Fördert technologieorientierte Gründungen in Bayern. Für KMU unter 6 Jahre mit unter 10 Mitarbeitern. Unterstützt Prototypenentwicklung und Markteinführung.",
+      "foerdergeber": "StMWi Bayern",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 25000,
+      "volumen_max_eur": 250000,
+      "eigenanteil_prozent": 50,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.gruenderland.bayern/",
+      "url_quelle": "https://www.foerderdatenbank.de/FDB/Content/DE/Foerderprogramm/Land/Bayern/bayerisches-foerderprogramm-technologieorientiert.html",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BY"
+      ],
+      "phasen": [
+        "gruendung",
+        "fruehphase"
+      ],
+      "groessen": [
+        "solo",
+        "mikro"
+      ],
+      "branchen": [
+        {
+          "id": 3,
+          "name": "Forschung & Entwicklung",
+          "slug": "forschung-entwicklung"
+        },
+        {
+          "id": 7,
+          "name": "IT & Software",
+          "slug": "it-software"
+        },
+        {
+          "id": 11,
+          "name": "Produktion & Industrie",
+          "slug": "produktion-industrie"
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "name": "BayStartUP Coaching & Finanzierung",
+      "kurzname": "BayStartUP",
+      "beschreibung": "Vermittelt Finanzierungen für bayerische Startups. Business Plan Wettbewerbe, über 300 aktive Business Angels, VC-Netzwerk und Coaching.",
+      "foerdergeber": "BayStartUP GmbH",
+      "foerderart": "beratung",
+      "volumen_min_eur": 0,
+      "volumen_max_eur": 0,
+      "eigenanteil_prozent": 0,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.baystartup.de/",
+      "url_quelle": "https://www.baystartup.de/",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BY"
+      ],
+      "phasen": [
+        "ideation",
+        "gruendung",
+        "fruehphase"
+      ],
+      "groessen": [
+        "solo",
+        "mikro",
+        "klein"
+      ],
+      "branchen": [
+        {
+          "id": 16,
+          "name": "Branchenübergreifend",
+          "slug": "branchenuebergreifend"
+        },
+        {
+          "id": 7,
+          "name": "IT & Software",
+          "slug": "it-software"
+        },
+        {
+          "id": 3,
+          "name": "Forschung & Entwicklung",
+          "slug": "forschung-entwicklung"
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "name": "Transformation@Bayern",
+      "kurzname": "T@B",
+      "beschreibung": "Sonderprogramm für KMU zur Entwicklung und Implementierung innovativer und digitaler Technologien. Investitionsvolumen mind. 200.000 EUR. Bis 45% Zuschuss für kleine Unternehmen.",
+      "foerdergeber": "StMWi Bayern",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 50000,
+      "volumen_max_eur": 500000,
+      "eigenanteil_prozent": 55,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.stmwi.bayern.de/",
+      "url_quelle": "https://www.foerderdatenbank.de/FDB/Content/DE/Foerderprogramm/Land/Bayern/transformation-bayern.html",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BY"
+      ],
+      "phasen": [
+        "wachstum",
+        "etabliert"
+      ],
+      "groessen": [
+        "klein",
+        "mittel"
+      ],
+      "branchen": [
+        {
+          "id": 1,
+          "name": "Digitalisierung",
+          "slug": "digitalisierung"
+        },
+        {
+          "id": 11,
+          "name": "Produktion & Industrie",
+          "slug": "produktion-industrie"
+        }
+      ]
+    },
+    {
+      "id": 28,
+      "name": "Bayerische Regionalförderung",
+      "kurzname": "BRF",
+      "beschreibung": "Fördert Investitionsvorhaben in strukturschwachen Regionen Bayerns. Für gewerbliche Wirtschaft, Handwerk, Tourismus und Dienstleistungen.",
+      "foerdergeber": "StMWi Bayern",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 50000,
+      "volumen_max_eur": 2000000,
+      "eigenanteil_prozent": 50,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.stmwi.bayern.de/",
+      "url_quelle": "https://www.foerderdatenbank.de/FDB/Content/DE/Foerderprogramm/Land/Bayern/bayerische-regionale-wirtschaftsfoerderung.html",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BY"
+      ],
+      "phasen": [
+        "fruehphase",
+        "wachstum",
+        "etabliert"
+      ],
+      "groessen": [
+        "mikro",
+        "klein",
+        "mittel"
+      ],
+      "branchen": [
+        {
+          "id": 16,
+          "name": "Branchenübergreifend",
+          "slug": "branchenuebergreifend"
+        },
+        {
+          "id": 5,
+          "name": "Handwerk",
+          "slug": "handwerk"
+        },
+        {
+          "id": 13,
+          "name": "Tourismus & Gastro",
+          "slug": "tourismus-gastro"
+        },
+        {
+          "id": 11,
+          "name": "Produktion & Industrie",
+          "slug": "produktion-industrie"
+        }
+      ]
+    },
+    {
+      "id": 29,
+      "name": "Gründerstipendium NRW",
+      "kurzname": "Gründerstipendium NRW",
+      "beschreibung": "1.000 EUR/Monat für 1 Jahr für innovative Gründer:innen in NRW. Dazu Coaching, Netzwerk und Zugang zu Co-Working-Spaces.",
+      "foerdergeber": "MWIKE NRW",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 1000,
+      "volumen_max_eur": 12000,
+      "eigenanteil_prozent": 0,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.gruenderstipendium.nrw/",
+      "url_quelle": "https://www.foerderdatenbank.de/FDB/Content/DE/Foerderprogramm/Land/NRW/gruenderstipendium-nrw.html",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "NW"
+      ],
+      "phasen": [
+        "ideation",
+        "gruendung"
+      ],
+      "groessen": [
+        "solo",
+        "mikro"
+      ],
+      "branchen": [
+        {
+          "id": 16,
+          "name": "Branchenübergreifend",
+          "slug": "branchenuebergreifend"
+        },
+        {
+          "id": 7,
+          "name": "IT & Software",
+          "slug": "it-software"
+        },
+        {
+          "id": 1,
+          "name": "Digitalisierung",
+          "slug": "digitalisierung"
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "name": "Mittelstand Innovativ & Digital",
+      "kurzname": "MID-Gutscheine",
+      "beschreibung": "Beratungsgutscheine für Digitalisierung und Innovation in NRW. Bis 50% der Beratungskosten, max. 15.000 EUR.",
+      "foerdergeber": "MWIKE NRW",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 2000,
+      "volumen_max_eur": 15000,
+      "eigenanteil_prozent": 50,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.mittelstand-innovativ-digital.nrw/",
+      "url_quelle": "https://www.foerderdatenbank.de/FDB/Content/DE/Foerderprogramm/Land/NRW/mid-gutscheine.html",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "NW"
+      ],
+      "phasen": [
+        "fruehphase",
+        "wachstum",
+        "etabliert"
+      ],
+      "groessen": [
+        "mikro",
+        "klein",
+        "mittel"
+      ],
+      "branchen": [
+        {
+          "id": 1,
+          "name": "Digitalisierung",
+          "slug": "digitalisierung"
+        },
+        {
+          "id": 7,
+          "name": "IT & Software",
+          "slug": "it-software"
+        },
+        {
+          "id": 11,
+          "name": "Produktion & Industrie",
+          "slug": "produktion-industrie"
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "name": "NRW.BANK Gründungskredit",
+      "kurzname": "NRW Gründungskredit",
+      "beschreibung": "Zinsgünstiger Kredit der NRW.BANK für Existenzgründungen und junge Unternehmen in NRW. Bis 10 Mio. EUR für Investitionen und Betriebsmittel.",
+      "foerdergeber": "NRW.BANK",
+      "foerderart": "kredit",
+      "volumen_min_eur": 25000,
+      "volumen_max_eur": 10000000,
+      "eigenanteil_prozent": 0,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.nrwbank.de/",
+      "url_quelle": "https://www.nrwbank.de/",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "NW"
+      ],
+      "phasen": [
+        "gruendung",
+        "fruehphase"
+      ],
+      "groessen": [
+        "solo",
+        "mikro",
+        "klein",
+        "mittel"
+      ],
+      "branchen": [
+        {
+          "id": 16,
+          "name": "Branchenübergreifend",
+          "slug": "branchenuebergreifend"
+        }
+      ]
+    },
+    {
+      "id": 32,
+      "name": "Innovationskredit NRW",
+      "kurzname": "Innovationskredit NRW",
+      "beschreibung": "Kredit für innovative Vorhaben in NRW. Für F&E-Projekte, Digitalisierung und Prozessinnovationen. Bis 15 Mio. EUR.",
+      "foerdergeber": "NRW.BANK",
+      "foerderart": "kredit",
+      "volumen_min_eur": 25000,
+      "volumen_max_eur": 15000000,
+      "eigenanteil_prozent": 0,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.nrwbank.de/",
+      "url_quelle": "https://www.nrwbank.de/",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "NW"
+      ],
+      "phasen": [
+        "fruehphase",
+        "wachstum",
+        "etabliert"
+      ],
+      "groessen": [
+        "mikro",
+        "klein",
+        "mittel"
+      ],
+      "branchen": [
+        {
+          "id": 3,
+          "name": "Forschung & Entwicklung",
+          "slug": "forschung-entwicklung"
+        },
+        {
+          "id": 1,
+          "name": "Digitalisierung",
+          "slug": "digitalisierung"
+        },
+        {
+          "id": 7,
+          "name": "IT & Software",
+          "slug": "it-software"
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "name": "Berliner Startup Stipendium",
+      "kurzname": "BSS",
+      "beschreibung": "Bis 2.000 EUR/Monat pro Teammitglied für max. 6 Monate. Für technologiebasierte oder sozialunternehmerische Gründungen in Berlin.",
+      "foerdergeber": "SenWEB Berlin",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 2000,
+      "volumen_max_eur": 36000,
+      "eigenanteil_prozent": 0,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.berlin.de/sen/wirtschaft/gruenden/",
+      "url_quelle": "https://www.foerderdatenbank.de/FDB/Content/DE/Foerderprogramm/Land/Berlin/berliner-startup-stipendium.html",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BE"
+      ],
+      "phasen": [
+        "ideation",
+        "gruendung"
+      ],
+      "groessen": [
+        "solo",
+        "mikro"
+      ],
+      "branchen": [
+        {
+          "id": 16,
+          "name": "Branchenübergreifend",
+          "slug": "branchenuebergreifend"
+        },
+        {
+          "id": 7,
+          "name": "IT & Software",
+          "slug": "it-software"
+        },
+        {
+          "id": 12,
+          "name": "Sozialunternehmen",
+          "slug": "sozialunternehmen"
+        }
+      ]
+    },
+    {
+      "id": 34,
+      "name": "Coaching BONUS Berlin",
+      "kurzname": "Coaching BONUS",
+      "beschreibung": "Zuschuss für professionelles Coaching für Gründer:innen und junge Unternehmen in Berlin. Bis 70% der Coachingkosten, max. 4.000 EUR.",
+      "foerdergeber": "IBB Business Team",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 500,
+      "volumen_max_eur": 4000,
+      "eigenanteil_prozent": 30,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.ibb-business-team.de/",
+      "url_quelle": "https://www.ibb-business-team.de/",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BE"
+      ],
+      "phasen": [
+        "ideation",
+        "gruendung",
+        "fruehphase"
+      ],
+      "groessen": [
+        "solo",
+        "mikro"
+      ],
+      "branchen": [
+        {
+          "id": 16,
+          "name": "Branchenübergreifend",
+          "slug": "branchenuebergreifend"
+        }
+      ]
+    },
+    {
+      "id": 35,
+      "name": "GründungsBONUS Berlin",
+      "kurzname": "GründungsBONUS",
+      "beschreibung": "Zuschuss für innovative Gründungen in Berlin. Max. 50.000 EUR für Investitionen und Sachkosten. Bis 50% der förderfähigen Ausgaben.",
+      "foerdergeber": "IBB Business Team",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 5000,
+      "volumen_max_eur": 50000,
+      "eigenanteil_prozent": 50,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.ibb-business-team.de/",
+      "url_quelle": "https://www.ibb-business-team.de/",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BE"
+      ],
+      "phasen": [
+        "gruendung",
+        "fruehphase"
+      ],
+      "groessen": [
+        "solo",
+        "mikro",
+        "klein"
+      ],
+      "branchen": [
+        {
+          "id": 16,
+          "name": "Branchenübergreifend",
+          "slug": "branchenuebergreifend"
+        },
+        {
+          "id": 7,
+          "name": "IT & Software",
+          "slug": "it-software"
+        },
+        {
+          "id": 8,
+          "name": "Kreativwirtschaft",
+          "slug": "kreativwirtschaft"
+        }
+      ]
+    },
+    {
+      "id": 36,
+      "name": "Start-up BW Pre-Seed",
+      "kurzname": "Pre-Seed BW",
+      "beschreibung": "Frühphasenfinanzierung bis 200.000 EUR als Wandeldarlehen. Für junge Startups in BW zwischen Gründung und erster Finanzierungsrunde.",
+      "foerdergeber": "L-Bank BW",
+      "foerderart": "kredit",
+      "volumen_min_eur": 50000,
+      "volumen_max_eur": 200000,
+      "eigenanteil_prozent": 0,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.startupbw.de/",
+      "url_quelle": "https://www.foerderdatenbank.de/FDB/Content/DE/Foerderprogramm/Land/BW/startup-bw-pre-seed.html",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BW"
+      ],
+      "phasen": [
+        "gruendung",
+        "fruehphase"
+      ],
+      "groessen": [
+        "mikro",
+        "klein"
+      ],
+      "branchen": [
+        {
+          "id": 16,
+          "name": "Branchenübergreifend",
+          "slug": "branchenuebergreifend"
+        },
+        {
+          "id": 7,
+          "name": "IT & Software",
+          "slug": "it-software"
+        },
+        {
+          "id": 3,
+          "name": "Forschung & Entwicklung",
+          "slug": "forschung-entwicklung"
+        }
+      ]
+    },
+    {
+      "id": 37,
+      "name": "Innovationsgutschein BW",
+      "kurzname": "Innovationsgutschein",
+      "beschreibung": "Gutschein A: 2.500 EUR für Machbarkeitsstudien. Gutschein B: 5.000 EUR für umsetzungsorientierte F&E. Für KMU in Baden-Württemberg.",
+      "foerdergeber": "MWA BW",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 2500,
+      "volumen_max_eur": 5000,
+      "eigenanteil_prozent": 0,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.innovationsgutschein.de/",
+      "url_quelle": "https://www.foerderdatenbank.de/FDB/Content/DE/Foerderprogramm/Land/BW/innovationsgutschein-bw.html",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BW"
+      ],
+      "phasen": [
+        "fruehphase",
+        "wachstum"
+      ],
+      "groessen": [
+        "mikro",
+        "klein",
+        "mittel"
+      ],
+      "branchen": [
+        {
+          "id": 3,
+          "name": "Forschung & Entwicklung",
+          "slug": "forschung-entwicklung"
+        },
+        {
+          "id": 16,
+          "name": "Branchenübergreifend",
+          "slug": "branchenuebergreifend"
+        }
+      ]
+    },
+    {
+      "id": 38,
+      "name": "Innovationsfinanzierung 4.0 BW",
+      "kurzname": "InnoFin 4.0",
+      "beschreibung": "L-Bank-Programm für innovative Vorhaben: Digitalisierung, Industrie 4.0, neue Geschäftsmodelle. Kredit bis 5 Mio. EUR mit Tilgungszuschuss.",
+      "foerdergeber": "L-Bank BW",
+      "foerderart": "kredit",
+      "volumen_min_eur": 10000,
+      "volumen_max_eur": 5000000,
+      "eigenanteil_prozent": 0,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.l-bank.de/",
+      "url_quelle": "https://www.l-bank.de/",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BW"
+      ],
+      "phasen": [
+        "fruehphase",
+        "wachstum",
+        "etabliert"
+      ],
+      "groessen": [
+        "mikro",
+        "klein",
+        "mittel"
+      ],
+      "branchen": [
+        {
+          "id": 1,
+          "name": "Digitalisierung",
+          "slug": "digitalisierung"
+        },
+        {
+          "id": 7,
+          "name": "IT & Software",
+          "slug": "it-software"
+        },
+        {
+          "id": 11,
+          "name": "Produktion & Industrie",
+          "slug": "produktion-industrie"
+        }
+      ]
+    },
+    {
+      "id": 39,
+      "name": "Niedersachsen Digital aufgeLaden",
+      "kurzname": "Digital aufgeLaden",
+      "beschreibung": "Fördert Digitalisierung im stationären Einzelhandel Niedersachsen. Webshops, digitale Sichtbarkeit, Warenwirtschaftssysteme. Bis 10.000 EUR.",
+      "foerdergeber": "NBank",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 2500,
+      "volumen_max_eur": 10000,
+      "eigenanteil_prozent": 50,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.nbank.de/",
+      "url_quelle": "https://www.foerderdatenbank.de/FDB/Content/DE/Foerderprogramm/Land/Niedersachsen/digital-aufgeladen.html",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "NI"
+      ],
+      "phasen": [
+        "fruehphase",
+        "wachstum",
+        "etabliert"
+      ],
+      "groessen": [
+        "solo",
+        "mikro",
+        "klein"
+      ],
+      "branchen": [
+        {
+          "id": 6,
+          "name": "Handel",
+          "slug": "handel"
+        },
+        {
+          "id": 1,
+          "name": "Digitalisierung",
+          "slug": "digitalisierung"
+        }
+      ]
+    },
+    {
+      "id": 40,
+      "name": "Gründungsfinanzierung Niedersachsen",
+      "kurzname": "NBank Gründung",
+      "beschreibung": "Zinsgünstige Darlehen der NBank für Gründungen in Niedersachsen. Bis 200.000 EUR für Investitionen und Betriebsmittel.",
+      "foerdergeber": "NBank",
+      "foerderart": "kredit",
+      "volumen_min_eur": 10000,
+      "volumen_max_eur": 200000,
+      "eigenanteil_prozent": 0,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.nbank.de/",
+      "url_quelle": "https://www.nbank.de/",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "NI"
+      ],
+      "phasen": [
+        "gruendung",
+        "fruehphase"
+      ],
+      "groessen": [
+        "solo",
+        "mikro",
+        "klein"
+      ],
+      "branchen": [
+        {
+          "id": 16,
+          "name": "Branchenübergreifend",
+          "slug": "branchenuebergreifend"
+        }
+      ]
+    },
+    {
+      "id": 41,
+      "name": "Innovationsförderung Niedersachsen",
+      "kurzname": "Innovationsförderung NI",
+      "beschreibung": "Zuschüsse für innovative Vorhaben von KMU in Niedersachsen. Einzelbetriebliche und kooperative F&E-Projekte. Bis 50% der Ausgaben.",
+      "foerdergeber": "NBank",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 20000,
+      "volumen_max_eur": 400000,
+      "eigenanteil_prozent": 50,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.nbank.de/",
+      "url_quelle": "https://www.nbank.de/",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "NI"
+      ],
+      "phasen": [
+        "fruehphase",
+        "wachstum",
+        "etabliert"
+      ],
+      "groessen": [
+        "mikro",
+        "klein",
+        "mittel"
+      ],
+      "branchen": [
+        {
+          "id": 3,
+          "name": "Forschung & Entwicklung",
+          "slug": "forschung-entwicklung"
+        },
+        {
+          "id": 7,
+          "name": "IT & Software",
+          "slug": "it-software"
+        },
+        {
+          "id": 11,
+          "name": "Produktion & Industrie",
+          "slug": "produktion-industrie"
+        }
+      ]
+    },
+    {
+      "id": 42,
+      "name": "InnoStartBonus Sachsen",
+      "kurzname": "InnoStartBonus",
+      "beschreibung": "1.000 EUR/Monat für bis zu 12 Monate für innovative Gründer:innen in Sachsen. Zur Entwicklung und Validierung der Geschäftsidee.",
+      "foerdergeber": "SAB Sachsen",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 1000,
+      "volumen_max_eur": 12000,
+      "eigenanteil_prozent": 0,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.sab.sachsen.de/",
+      "url_quelle": "https://www.foerderdatenbank.de/FDB/Content/DE/Foerderprogramm/Land/Sachsen/innostartbonus.html",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "SN"
+      ],
+      "phasen": [
+        "ideation",
+        "gruendung"
+      ],
+      "groessen": [
+        "solo",
+        "mikro"
+      ],
+      "branchen": [
+        {
+          "id": 16,
+          "name": "Branchenübergreifend",
+          "slug": "branchenuebergreifend"
+        },
+        {
+          "id": 7,
+          "name": "IT & Software",
+          "slug": "it-software"
+        }
+      ]
+    },
+    {
+      "id": 43,
+      "name": "Technologiegründerstipendium Sachsen",
+      "kurzname": "Techgründerstipendium",
+      "beschreibung": "Stipendium für technologieorientierte Gründer:innen in Sachsen. Bis 2.400 EUR/Monat für max. 18 Monate plus Sachkostenförderung.",
+      "foerdergeber": "SAB Sachsen",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 2400,
+      "volumen_max_eur": 43200,
+      "eigenanteil_prozent": 0,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.sab.sachsen.de/",
+      "url_quelle": "https://www.sab.sachsen.de/",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "SN"
+      ],
+      "phasen": [
+        "ideation",
+        "gruendung"
+      ],
+      "groessen": [
+        "solo",
+        "mikro"
+      ],
+      "branchen": [
+        {
+          "id": 3,
+          "name": "Forschung & Entwicklung",
+          "slug": "forschung-entwicklung"
+        },
+        {
+          "id": 7,
+          "name": "IT & Software",
+          "slug": "it-software"
+        }
+      ]
+    },
+    {
+      "id": 44,
+      "name": "Hessen Mikrodarlehen",
+      "kurzname": "Hessen Mikrodarlehen",
+      "beschreibung": "Darlehen bis 25.000 EUR für Gründer:innen und Kleinstunternehmen in Hessen. Ohne Bankübliche Sicherheiten, vereinfachtes Verfahren.",
+      "foerdergeber": "WIBank Hessen",
+      "foerderart": "kredit",
+      "volumen_min_eur": 1000,
+      "volumen_max_eur": 25000,
+      "eigenanteil_prozent": 0,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.wibank.de/",
+      "url_quelle": "https://www.wibank.de/",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "HE"
+      ],
+      "phasen": [
+        "gruendung",
+        "fruehphase"
+      ],
+      "groessen": [
+        "solo",
+        "mikro"
+      ],
+      "branchen": [
+        {
+          "id": 16,
+          "name": "Branchenübergreifend",
+          "slug": "branchenuebergreifend"
+        }
+      ]
+    },
+    {
+      "id": 45,
+      "name": "Distr@l Hessen",
+      "kurzname": "Distr@l",
+      "beschreibung": "Digitalisierungsprogramm des Landes Hessen. Fördert Digitalisierungsprojekte in Unternehmen, Verwaltung und Gesellschaft. Verschiedene Förderlinien.",
+      "foerdergeber": "HMWK Hessen",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 10000,
+      "volumen_max_eur": 300000,
+      "eigenanteil_prozent": 50,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.digitalstrategie.hessen.de/",
+      "url_quelle": "https://www.digitalstrategie.hessen.de/",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "HE"
+      ],
+      "phasen": [
+        "fruehphase",
+        "wachstum",
+        "etabliert"
+      ],
+      "groessen": [
+        "mikro",
+        "klein",
+        "mittel"
+      ],
+      "branchen": [
+        {
+          "id": 1,
+          "name": "Digitalisierung",
+          "slug": "digitalisierung"
+        },
+        {
+          "id": 7,
+          "name": "IT & Software",
+          "slug": "it-software"
+        }
+      ]
+    },
+    {
+      "id": 46,
+      "name": "InnoRampUp Hamburg",
+      "kurzname": "InnoRampUp",
+      "beschreibung": "Wandeldarlehen bis 150.000 EUR für innovative Startups in Hamburg. Für die Phase zwischen Prototyp und Marktreife. Keine Sicherheiten nötig.",
+      "foerdergeber": "IFB Hamburg",
+      "foerderart": "kredit",
+      "volumen_min_eur": 25000,
+      "volumen_max_eur": 150000,
+      "eigenanteil_prozent": 0,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.ifbhh.de/",
+      "url_quelle": "https://www.ifbhh.de/",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "HH"
+      ],
+      "phasen": [
+        "gruendung",
+        "fruehphase"
+      ],
+      "groessen": [
+        "solo",
+        "mikro",
+        "klein"
+      ],
+      "branchen": [
+        {
+          "id": 16,
+          "name": "Branchenübergreifend",
+          "slug": "branchenuebergreifend"
+        },
+        {
+          "id": 7,
+          "name": "IT & Software",
+          "slug": "it-software"
+        }
+      ]
+    },
+    {
+      "id": 47,
+      "name": "Hamburg Kreativ Gesellschaft – Förderungen",
+      "kurzname": "Kreativ Gesellschaft HH",
+      "beschreibung": "Unterstützt die Kreativwirtschaft in Hamburg mit Beratung, Finanzierung und Netzwerk. Verschiedene Programme für Kreativschaffende.",
+      "foerdergeber": "Kreativ Gesellschaft Hamburg",
+      "foerderart": "beratung",
+      "volumen_min_eur": 0,
+      "volumen_max_eur": 0,
+      "eigenanteil_prozent": 0,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.kreativgesellschaft.org/",
+      "url_quelle": "https://www.kreativgesellschaft.org/",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "HH"
+      ],
+      "phasen": [
+        "ideation",
+        "gruendung",
+        "fruehphase"
+      ],
+      "groessen": [
+        "solo",
+        "mikro"
+      ],
+      "branchen": [
+        {
+          "id": 8,
+          "name": "Kreativwirtschaft",
+          "slug": "kreativwirtschaft"
+        }
+      ]
+    },
+    {
+      "id": 48,
+      "name": "Seed- und Startup-Förderung SH",
+      "kurzname": "Seed SH",
+      "beschreibung": "Beteiligungsfinanzierung für technologieorientierte Startups in Schleswig-Holstein. Offene oder stille Beteiligungen bis 600.000 EUR.",
+      "foerdergeber": "MBG SH",
+      "foerderart": "beteiligung",
+      "volumen_min_eur": 50000,
+      "volumen_max_eur": 600000,
+      "eigenanteil_prozent": 0,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.mbg-sh.de/",
+      "url_quelle": "https://www.mbg-sh.de/",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "SH"
+      ],
+      "phasen": [
+        "gruendung",
+        "fruehphase"
+      ],
+      "groessen": [
+        "mikro",
+        "klein"
+      ],
+      "branchen": [
+        {
+          "id": 16,
+          "name": "Branchenübergreifend",
+          "slug": "branchenuebergreifend"
+        },
+        {
+          "id": 7,
+          "name": "IT & Software",
+          "slug": "it-software"
+        },
+        {
+          "id": 3,
+          "name": "Forschung & Entwicklung",
+          "slug": "forschung-entwicklung"
+        }
+      ]
+    },
+    {
+      "id": 49,
+      "name": "Thüringer Gründerprämie",
+      "kurzname": "Gründerprämie TH",
+      "beschreibung": "Prämie für innovative Gründungen in Thüringen. Bis 100.000 EUR als nicht rückzahlbarer Zuschuss für Personalkosten, Investitionen und Beratung.",
+      "foerdergeber": "TAB Thüringen",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 10000,
+      "volumen_max_eur": 100000,
+      "eigenanteil_prozent": 20,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.aufbaubank.de/",
+      "url_quelle": "https://www.aufbaubank.de/",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "TH"
+      ],
+      "phasen": [
+        "ideation",
+        "gruendung"
+      ],
+      "groessen": [
+        "solo",
+        "mikro",
+        "klein"
+      ],
+      "branchen": [
+        {
+          "id": 16,
+          "name": "Branchenübergreifend",
+          "slug": "branchenuebergreifend"
+        },
+        {
+          "id": 7,
+          "name": "IT & Software",
+          "slug": "it-software"
+        },
+        {
+          "id": 3,
+          "name": "Forschung & Entwicklung",
+          "slug": "forschung-entwicklung"
+        }
+      ]
+    },
+    {
+      "id": 50,
+      "name": "Thüringer Innovationsprämie",
+      "kurzname": "Innovationsprämie TH",
+      "beschreibung": "Fördert innovative Vorhaben von KMU in Thüringen. Bis 100.000 EUR für die Entwicklung neuer Produkte, Verfahren und Dienstleistungen.",
+      "foerdergeber": "TAB Thüringen",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 5000,
+      "volumen_max_eur": 100000,
+      "eigenanteil_prozent": 50,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.aufbaubank.de/",
+      "url_quelle": "https://www.aufbaubank.de/",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "TH"
+      ],
+      "phasen": [
+        "fruehphase",
+        "wachstum"
+      ],
+      "groessen": [
+        "mikro",
+        "klein",
+        "mittel"
+      ],
+      "branchen": [
+        {
+          "id": 3,
+          "name": "Forschung & Entwicklung",
+          "slug": "forschung-entwicklung"
+        },
+        {
+          "id": 11,
+          "name": "Produktion & Industrie",
+          "slug": "produktion-industrie"
+        }
+      ]
+    },
+    {
+      "id": 51,
+      "name": "Brandenburgischer Innovationsgutschein",
+      "kurzname": "BIG",
+      "beschreibung": "Gutscheine für Innovationsberatung und F&E-Leistungen für KMU in Brandenburg. BIG-Transfer: bis 75.000 EUR. BIG-Digital: bis 50.000 EUR.",
+      "foerdergeber": "ILB Brandenburg",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 3000,
+      "volumen_max_eur": 75000,
+      "eigenanteil_prozent": 50,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.ilb.de/",
+      "url_quelle": "https://www.ilb.de/",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BB"
+      ],
+      "phasen": [
+        "fruehphase",
+        "wachstum",
+        "etabliert"
+      ],
+      "groessen": [
+        "mikro",
+        "klein",
+        "mittel"
+      ],
+      "branchen": [
+        {
+          "id": 3,
+          "name": "Forschung & Entwicklung",
+          "slug": "forschung-entwicklung"
+        },
+        {
+          "id": 1,
+          "name": "Digitalisierung",
+          "slug": "digitalisierung"
+        },
+        {
+          "id": 7,
+          "name": "IT & Software",
+          "slug": "it-software"
+        }
+      ]
+    },
+    {
+      "id": 52,
+      "name": "Gründerstipendium M-V",
+      "kurzname": "Gründerstipendium MV",
+      "beschreibung": "Stipendium für innovative Gründungen in Mecklenburg-Vorpommern. Bis 1.800 EUR/Monat für max. 18 Monate.",
+      "foerdergeber": "Gesellschaft für Wirtschafts- und Technologieförderung MV",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 1800,
+      "volumen_max_eur": 32400,
+      "eigenanteil_prozent": 0,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.wm.mv-regierung.de/",
+      "url_quelle": "https://www.wm.mv-regierung.de/",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "MV"
+      ],
+      "phasen": [
+        "ideation",
+        "gruendung"
+      ],
+      "groessen": [
+        "solo",
+        "mikro"
+      ],
+      "branchen": [
+        {
+          "id": 16,
+          "name": "Branchenübergreifend",
+          "slug": "branchenuebergreifend"
+        },
+        {
+          "id": 7,
+          "name": "IT & Software",
+          "slug": "it-software"
+        }
+      ]
+    },
+    {
+      "id": 53,
+      "name": "Horizon Europe – EIC Accelerator",
+      "kurzname": "EIC Accelerator",
+      "beschreibung": "EU-Förderung für hochinnovative Startups und KMU. Bis 2,5 Mio. EUR Zuschuss + bis 15 Mio. EUR Eigenkapital. Für bahnbrechende Innovationen mit Skalierungspotenzial.",
+      "foerdergeber": "Europäische Kommission / EIC",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 500000,
+      "volumen_max_eur": 2500000,
+      "eigenanteil_prozent": 30,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://eic.ec.europa.eu/eic-funding-opportunities/eic-accelerator_en",
+      "url_quelle": "https://eic.ec.europa.eu/",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BUND"
+      ],
+      "phasen": [
+        "fruehphase",
+        "wachstum"
+      ],
+      "groessen": [
+        "mikro",
+        "klein",
+        "mittel"
+      ],
+      "branchen": [
+        {
+          "id": 3,
+          "name": "Forschung & Entwicklung",
+          "slug": "forschung-entwicklung"
+        },
+        {
+          "id": 7,
+          "name": "IT & Software",
+          "slug": "it-software"
+        },
+        {
+          "id": 4,
+          "name": "Gesundheit & Medizin",
+          "slug": "gesundheit-medizin"
+        },
+        {
+          "id": 2,
+          "name": "Energie & Umwelt",
+          "slug": "energie-umwelt"
+        }
+      ]
+    },
+    {
+      "id": 54,
+      "name": "EIC Pathfinder",
+      "kurzname": "EIC Pathfinder",
+      "beschreibung": "EU-Förderung für visionäre Grundlagenforschung mit Technologiepotenzial. Open: bis 3 Mio. EUR, Challenges: bis 4 Mio. EUR. Für Konsortien mit mind. 3 Partnern.",
+      "foerdergeber": "Europäische Kommission / EIC",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 500000,
+      "volumen_max_eur": 4000000,
+      "eigenanteil_prozent": 0,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://eic.ec.europa.eu/",
+      "url_quelle": "https://eic.ec.europa.eu/",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BUND"
+      ],
+      "phasen": [
+        "ideation",
+        "fruehphase"
+      ],
+      "groessen": [
+        "mikro",
+        "klein",
+        "mittel"
+      ],
+      "branchen": [
+        {
+          "id": 3,
+          "name": "Forschung & Entwicklung",
+          "slug": "forschung-entwicklung"
+        }
+      ]
+    },
+    {
+      "id": 55,
+      "name": "Eurostars",
+      "kurzname": "Eurostars",
+      "beschreibung": "Europäisches Förderprogramm für internationale F&E-Kooperationen von KMU. Projekte mit Partnern aus mind. 2 Eurostars-Ländern. Nationale Förderung über ZIM.",
+      "foerdergeber": "Eureka / BMWK",
+      "foerderart": "zuschuss",
+      "volumen_min_eur": 50000,
+      "volumen_max_eur": 500000,
+      "eigenanteil_prozent": 50,
+      "status": "aktiv",
+      "antragsfrist": null,
+      "url_antrag": "https://www.eurostars-eureka.eu/",
+      "url_quelle": "https://www.eurostars-eureka.eu/",
+      "aktualisiert_am": "2026-03-12",
+      "aktiv": true,
+      "bundeslaender": [
+        "BUND"
+      ],
+      "phasen": [
+        "fruehphase",
+        "wachstum"
+      ],
+      "groessen": [
+        "mikro",
+        "klein",
+        "mittel"
+      ],
+      "branchen": [
+        {
+          "id": 3,
+          "name": "Forschung & Entwicklung",
+          "slug": "forschung-entwicklung"
+        },
+        {
+          "id": 7,
+          "name": "IT & Software",
+          "slug": "it-software"
+        }
+      ]
+    }
+  ],
+  "branchen": [
+    {
+      "id": 1,
+      "name": "Digitalisierung",
+      "slug": "digitalisierung"
+    },
+    {
+      "id": 2,
+      "name": "Energie & Umwelt",
+      "slug": "energie-umwelt"
+    },
+    {
+      "id": 3,
+      "name": "Forschung & Entwicklung",
+      "slug": "forschung-entwicklung"
+    },
+    {
+      "id": 4,
+      "name": "Gesundheit & Medizin",
+      "slug": "gesundheit-medizin"
+    },
+    {
+      "id": 5,
+      "name": "Handwerk",
+      "slug": "handwerk"
+    },
+    {
+      "id": 6,
+      "name": "Handel",
+      "slug": "handel"
+    },
+    {
+      "id": 7,
+      "name": "IT & Software",
+      "slug": "it-software"
+    },
+    {
+      "id": 8,
+      "name": "Kreativwirtschaft",
+      "slug": "kreativwirtschaft"
+    },
+    {
+      "id": 9,
+      "name": "Landwirtschaft",
+      "slug": "landwirtschaft"
+    },
+    {
+      "id": 10,
+      "name": "Mobilität & Logistik",
+      "slug": "mobilitaet-logistik"
+    },
+    {
+      "id": 11,
+      "name": "Produktion & Industrie",
+      "slug": "produktion-industrie"
+    },
+    {
+      "id": 12,
+      "name": "Sozialunternehmen",
+      "slug": "sozialunternehmen"
+    },
+    {
+      "id": 13,
+      "name": "Tourismus & Gastro",
+      "slug": "tourismus-gastro"
+    },
+    {
+      "id": 14,
+      "name": "Bildung",
+      "slug": "bildung"
+    },
+    {
+      "id": 15,
+      "name": "Bauwesen & Immobilien",
+      "slug": "bauwesen-immobilien"
+    },
+    {
+      "id": 16,
+      "name": "Branchenübergreifend",
+      "slug": "branchenuebergreifend"
+    }
+  ]
+}

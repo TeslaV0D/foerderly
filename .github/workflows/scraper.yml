@@ -1,0 +1,48 @@
+name: Förderly Scraper
+
+on:
+  schedule:
+    # Mo + Do um 4:00 CET (= 3:00 UTC)
+    - cron: '0 3 * * 1,4'
+  workflow_dispatch:
+    # Manuell auslösbar über GitHub UI
+    inputs:
+      max_programmes:
+        description: 'Max Programme gesamt'
+        required: false
+        default: '2000'
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Dependencies
+        run: pip install requests beautifulsoup4 lxml supabase
+
+      - name: Run Scraper
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          python scraper.py --alle \
+            --max-per-land 100 \
+            --max ${{ github.event.inputs.max_programmes || '2000' }} \
+            --json-backup
+
+      - name: Upload JSON Backup
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: foerderprogramme-backup-${{ github.run_number }}
+          path: data/foerderprogramme.json
+          retention-days: 30
