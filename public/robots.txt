@@ -1,0 +1,12 @@
+# Förderly – robots.txt
+# https://foerderly.com
+
+User-agent: *
+Allow: /
+Crawl-delay: 1
+
+# Sitemap
+Sitemap: https://foerderly.com/sitemap.xml
+
+# Interne API-Endpunkte nicht crawlen
+Disallow: /api/

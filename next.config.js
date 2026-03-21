@@ -14,7 +14,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data:",
-      "connect-src 'self'",
+      "connect-src 'self' https://*.supabase.co",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
@@ -33,8 +33,6 @@ const nextConfig = {
         headers: securityHeaders,
       },
       {
-        // CORS: API-Zugriff einschränken
-        // In Produktion: value auf eigene Domain setzen (z.B. 'https://foerderly.com')
         source: '/api/:path*',
         headers: [
           { key: 'Access-Control-Allow-Methods', value: 'GET' },
