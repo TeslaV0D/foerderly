@@ -1,14 +1,11 @@
+// src/app/components/AdvancedFilters.js
+// Fix 7: Datenqualität-Filter komplett entfernt
 'use client';
 
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { BUNDESLAENDER, PHASEN, GROESSEN, FOERDERARTEN } from '@/lib/constants';
 
-/**
- * Advanced Filters für die SSR Search-Seite.
- * Client Component der Query-Params manipuliert.
- * Unterstützt: Range (Volumen), Checkboxes, Sorting, Text.
- */
 export default function AdvancedFilters({ currentFilters }) {
   const router = useRouter();
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -35,13 +32,13 @@ export default function AdvancedFilters({ currentFilters }) {
     router.push('/search');
   }
 
+  // Fix 7: datenqualitaet aus activeCount entfernt
   const activeCount = Object.entries(currentFilters)
-    .filter(([k, v]) => v && k !== 'q' && k !== 'sortBy' && k !== 'sortDir')
+    .filter(([k, v]) => v && k !== 'q' && k !== 'sortBy' && k !== 'sortDir' && k !== 'datenqualitaet')
     .length;
 
   return (
     <div className="space-y-3">
-      {/* Search Bar */}
       <form onSubmit={handleSearch}
         className="flex gap-3 rounded-2xl p-4"
         style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)' }}
@@ -51,12 +48,12 @@ export default function AdvancedFilters({ currentFilters }) {
           value={localQ}
           onChange={(e) => setLocalQ(e.target.value)}
           placeholder="Förderprogramm suchen..."
-          className="flex-1 px-4 py-2.5 text-sm rounded-xl"
+          className="flex-1 px-4 py-2.5 text-sm rounded-xl cursor-text"
           style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', color: 'var(--text-primary)' }}
         />
         <button
           type="submit"
-          className="px-6 py-2.5 font-medium text-sm rounded-xl transition-all shrink-0"
+          className="px-6 py-2.5 font-medium text-sm rounded-xl transition-all shrink-0 cursor-pointer"
           style={{ background: 'linear-gradient(135deg, var(--accent-start), var(--accent-end))', color: '#0f0f13' }}
         >
           Suchen
@@ -64,7 +61,7 @@ export default function AdvancedFilters({ currentFilters }) {
         <button
           type="button"
           onClick={() => setShowAdvanced(!showAdvanced)}
-          className="px-3 py-2.5 text-sm rounded-xl transition-all shrink-0"
+          className="px-3 py-2.5 text-sm rounded-xl transition-all shrink-0 cursor-pointer"
           style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', color: 'var(--text-secondary)' }}
         >
           Filter {activeCount > 0 ? `(${activeCount})` : ''}
@@ -77,7 +74,6 @@ export default function AdvancedFilters({ currentFilters }) {
         </button>
       </form>
 
-      {/* Advanced Filters Panel */}
       {showAdvanced && (
         <div
           className="rounded-2xl p-5 animate-fade-up"
@@ -128,34 +124,22 @@ export default function AdvancedFilters({ currentFilters }) {
             />
           </div>
 
-          {/* Extra Filters Row */}
+          {/* Fix 7: Datenqualität-Filter komplett entfernt */}
           <div className="flex flex-wrap items-center gap-3 mt-4 pt-4" style={{ borderTop: '1px solid var(--border-subtle)' }}>
             <label className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
               <input
                 type="checkbox"
                 checked={currentFilters.hatDeadline === 'true'}
                 onChange={(e) => applyFilters({ hatDeadline: e.target.checked ? 'true' : '' })}
-                className="rounded"
+                className="rounded cursor-pointer"
               />
               Nur mit Deadline
             </label>
 
-            <FilterSelect
-              label=""
-              value={currentFilters.datenqualitaet}
-              onChange={(v) => applyFilters({ datenqualitaet: v })}
-              options={[
-                { value: '', label: 'Alle Qualitäten' },
-                { value: 'vollstaendig', label: '✓ Vollständig' },
-                { value: 'unvollstaendig', label: '◐ Teilweise' },
-              ]}
-              inline
-            />
-
             {activeCount > 0 && (
               <button
                 onClick={resetAll}
-                className="text-xs px-3 py-1.5 rounded-lg transition-all ml-auto"
+                className="text-xs px-3 py-1.5 rounded-lg transition-all ml-auto cursor-pointer"
                 style={{ color: 'var(--text-muted)', background: 'var(--bg-elevated)' }}
               >
                 Alle zurücksetzen
@@ -179,7 +163,7 @@ function FilterSelect({ label, value, options, onChange, inline = false }) {
       <select
         value={value || ''}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2 text-sm rounded-xl appearance-none"
+        className="w-full px-3 py-2 text-sm rounded-xl appearance-none cursor-pointer"
         style={{
           background: 'var(--bg-elevated)',
           border: '1px solid var(--border-default)',

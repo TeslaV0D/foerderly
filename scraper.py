@@ -1,23 +1,21 @@
 """
-FÖRDERLY – Scraper v5.0
+FÖRDERLY – Scraper v5.1
 ========================
-Erweitert v4.1 um 10 neue Felder, besseres Error-Handling,
-CSV Error-Log und Skip-statt-Abort Logik.
+Repariert v5.0: Alle 12 Probleme behoben.
 
-Neue Felder:
-  - antragsfrist (string)
-  - hat_deadline (bool)
-  - rechtsgrundlagen (array)
-  - foerderquote (int 1-100)
-  - bearbeitungszeit (string)
-  - besonderheiten (array)
-  - kontakte (array of objects)
-  - zielgruppen_erweitert (array)
-  - finanzierungsform_erweitert (array)
-  - datenqualitaet ("vollstaendig"|"unvollstaendig"|"minimal")
-
-Strategie: Hybrid CSS + Regex (Option 2)
-Error-Handling: Skip einzelne Programme, nicht abort.
+Fixes:
+  1. Delays erhöht (2.0s List, 2.5s Detail, 45s Read-Timeout)
+  2. Exponential Backoff + Rate-Limit-Handling (429/403)
+  3. extract_antragsfrist() erweitert (mehr Keywords, Fulltext-Regex)
+  4. extract_rechtsgrundlagen() erweitert (mehr Keywords, Fallback)
+  5. extract_foerderquote() erweitert (mehr Patterns)
+  6. extract_bearbeitungszeit() erweitert (mehr Keywords)
+  7. extract_besonderheiten() erweitert (Inline-Text-Erkennung)
+  8. extract_kontakte() erweitert (Plain-Text Email+Tel Regex)
+  9. Beschreibungen auf 2000 Zeichen erhöht, Volltext-Tab
+  10. full_text auf 5000 Zeichen erhöht
+  11. Jede Extract-Funktion hat Try-Except
+  12. scraper_errors Tabelle wird beschrieben
 """
 
 import requests as req
@@ -25,16 +23,16 @@ import json, time, re, os, sys, argparse, csv
 from datetime import datetime
 from bs4 import BeautifulSoup
 
-# ─── Config ───
+# ─── Config (Fix 1: Delays erhöht) ───
 BASE = "https://www.foerderdatenbank.de"
 SEARCH = "/SiteGlobals/FDB/Forms/Suche/Expertensuche_Formular.html"
-DELAY_LIST = 1.2
-DELAY_DETAIL = 1.5
-MAX_RETRIES = 3
-TIMEOUT = (10, 25)
+DELAY_LIST = 2.0       # war 1.2
+DELAY_DETAIL = 2.5     # war 1.5
+MAX_RETRIES = 4        # war 3
+TIMEOUT = (10, 45)     # Read-Timeout war 25, jetzt 45
 
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
     "Accept-Language": "de-DE,de;q=0.9,en;q=0.5",
     "Accept-Encoding": "gzip, deflate, br",
@@ -78,45 +76,35 @@ ART_MAP = {
     "beteiligung": "beteiligung", "garantie": "buergschaft",
 }
 
-# ─── Erweiterte Branchen-Keywords (50+) ───
+# ─── Erweiterte Branchen-Keywords ───
 BRANCHE_KW = {
-    # Digitalisierung
     "digitalisierung": "digitalisierung", "digital": "digitalisierung",
     "smart cities": "digitalisierung", "e-commerce": "digitalisierung",
     "industrie 4.0": "digitalisierung", "ki": "digitalisierung",
     "künstliche intelligenz": "digitalisierung", "blockchain": "digitalisierung",
-    # Energie & Umwelt
     "energieeffizienz": "energie-umwelt", "erneuerbare energien": "energie-umwelt",
     "umwelt": "energie-umwelt", "naturschutz": "energie-umwelt",
     "klimaschutz": "energie-umwelt", "nachhaltigkeit": "energie-umwelt",
     "wasserstoff": "energie-umwelt", "photovoltaik": "energie-umwelt",
     "windenergie": "energie-umwelt", "bioenergie": "energie-umwelt",
     "elektromobilität": "energie-umwelt", "co2": "energie-umwelt",
-    # Forschung
     "forschung": "forschung-entwicklung", "innovation": "forschung-entwicklung",
     "technologie": "forschung-entwicklung", "f&e": "forschung-entwicklung",
     "prototyp": "forschung-entwicklung", "patent": "forschung-entwicklung",
-    # Gesundheit
     "gesundheit": "gesundheit-medizin", "medizin": "gesundheit-medizin",
     "pflege": "gesundheit-medizin", "pharma": "gesundheit-medizin",
     "medizintechnik": "gesundheit-medizin", "biotech": "gesundheit-medizin",
-    # Handwerk
     "handwerk": "handwerk", "meister": "handwerk", "gewerk": "handwerk",
-    # Handel
     "handel": "handel", "außenwirtschaft": "handel", "export": "handel",
     "einzelhandel": "handel",
-    # IT
     "it": "it-software", "software": "it-software", "saas": "it-software",
     "cloud": "it-software", "cybersecurity": "it-software",
     "app": "it-software", "plattform": "it-software",
-    # Kreativwirtschaft
     "kultur": "kreativwirtschaft", "kreativ": "kreativwirtschaft",
     "design": "kreativwirtschaft", "medien": "kreativwirtschaft",
     "film": "kreativwirtschaft", "musik": "kreativwirtschaft",
-    # Produktion
     "produktion": "produktion-industrie", "industrie": "produktion-industrie",
     "fertigung": "produktion-industrie", "maschinenbau": "produktion-industrie",
-    # Sonstige
     "existenzgründung": "branchenuebergreifend",
     "unternehmensfinanzierung": "branchenuebergreifend",
     "beratung": "branchenuebergreifend",
@@ -129,7 +117,6 @@ BRANCHE_KW = {
     "sozial": "sozialunternehmen", "gemeinnützig": "sozialunternehmen",
 }
 
-# ─── Zielgruppen-Keywords ───
 ZIELGRUPPEN_KW = {
     "frauen": ["frauen", "gründerinnen", "unternehmerinnen", "weiblich"],
     "forschung": ["wissenschaft", "hochschule", "universität", "forschung", "akadem"],
@@ -143,7 +130,6 @@ ZIELGRUPPEN_KW = {
     "regional": ["regional", "strukturschwach", "ländlich"],
 }
 
-# ─── Finanzierungsform-Keywords ───
 FINANZIERUNG_KW = {
     "mezzanine": ["mezzanine", "nachrangdarlehen", "nachrang"],
     "wandeldarlehen": ["wandeldarlehen", "convertible"],
@@ -183,7 +169,6 @@ def log(msg):
 
 
 def log_error(url, error_type, message, phase="detail"):
-    """Log error für CSV-Export und optional Supabase."""
     error_log.append({
         "timestamp": datetime.now().isoformat(),
         "url": url,
@@ -191,11 +176,10 @@ def log_error(url, error_type, message, phase="detail"):
         "error_message": str(message)[:500],
         "phase": phase,
     })
-    log(f"  ⚠️ [{error_type}] {message}")
+    log(f"  ⚠️ [{error_type}] {str(message)[:100]}")
 
 
 def export_error_csv(path="data/scraper_errors.csv"):
-    """Exportiert Error-Log als CSV."""
     if not error_log:
         return
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
@@ -207,7 +191,6 @@ def export_error_csv(path="data/scraper_errors.csv"):
 
 
 def export_errors_supabase(sb):
-    """Schreibt Error-Log in Supabase."""
     if not error_log or not sb:
         return
     try:
@@ -216,38 +199,57 @@ def export_errors_supabase(sb):
             "error_type": e["error_type"],
             "error_message": e["error_message"],
             "phase": e["phase"],
-        } for e in error_log[:500]]  # Max 500
+        } for e in error_log[:500]]
         sb.table("scraper_errors").insert(rows).execute()
         log(f"📋 {len(rows)} Fehler in Supabase geschrieben")
     except Exception as e:
         log(f"⚠️ Error-Log Supabase fehlgeschlagen: {e}")
 
 
+# ═══════════════════════════════════════════
+# Fix 2: Exponential Backoff + Rate-Limit-Handling
+# ═══════════════════════════════════════════
+
 def fetch(session, url, params=None, delay=DELAY_LIST, retries=MAX_RETRIES):
-    """Fetch mit Retry, Timeout, Error-Tracking. Gibt None zurück statt zu crashen."""
+    """Fetch mit Exponential Backoff, Rate-Limit-Handling, 403-Skip."""
     time.sleep(delay)
     for attempt in range(1, retries + 1):
         try:
             r = session.get(url, params=params, timeout=TIMEOUT, allow_redirects=True)
             r.raise_for_status()
             return BeautifulSoup(r.text, "lxml")
-        except req.exceptions.ConnectTimeout:
-            log_error(url, "ConnectTimeout", "Server nicht erreichbar", "fetch")
-        except req.exceptions.ReadTimeout:
-            log_error(url, "ReadTimeout", "Server antwortet nicht", "fetch")
-        except req.exceptions.ConnectionError as e:
-            log_error(url, "ConnectionError", str(e), "fetch")
+
         except req.exceptions.HTTPError as e:
-            log_error(url, "HTTPError", str(e), "fetch")
-            if hasattr(e, 'response') and e.response is not None:
-                if e.response.status_code == 403:
-                    return None
-                if e.response.status_code == 429:
-                    time.sleep(30)
+            status = e.response.status_code if hasattr(e, 'response') and e.response is not None else 0
+            log_error(url, f"HTTP{status}", str(e)[:200], "fetch")
+
+            # Fix 2: 403 → Skip sofort, kein Retry (Server will nicht)
+            if status == 403:
+                log(f"  ↪ 403 Forbidden – überspringe URL")
+                return None
+
+            # Fix 2: 429 → Rate-Limit, lange Pause vor Retry
+            if status == 429:
+                wait_time = 60 * attempt  # 60s, 120s, 180s...
+                log(f"  ↪ 429 Rate-Limit – warte {wait_time}s")
+                time.sleep(wait_time)
+                continue
+
+        except req.exceptions.ConnectTimeout:
+            log_error(url, "ConnectTimeout", f"Attempt {attempt}/{retries}", "fetch")
+        except req.exceptions.ReadTimeout:
+            log_error(url, "ReadTimeout", f"Attempt {attempt}/{retries}", "fetch")
+        except req.exceptions.ConnectionError as e:
+            log_error(url, "ConnectionError", str(e)[:200], "fetch")
         except Exception as e:
-            log_error(url, type(e).__name__, str(e), "fetch")
+            log_error(url, type(e).__name__, str(e)[:200], "fetch")
+
+        # Fix 2: Exponential Backoff
         if attempt < retries:
-            time.sleep(attempt * 5)
+            backoff = min(5 * (2 ** (attempt - 1)), 120)  # 5s, 10s, 20s, max 120s
+            log(f"  ↪ Retry {attempt}/{retries} in {backoff}s")
+            time.sleep(backoff)
+
     return None
 
 
@@ -270,7 +272,7 @@ def test_connectivity(session):
 
 
 # ═══════════════════════════════════════════
-# PHASE 1: Collect URLs (identisch zu v4.1)
+# PHASE 1: Collect URLs
 # ═══════════════════════════════════════════
 
 def collect_all_urls(session):
@@ -292,7 +294,7 @@ def collect_all_urls(session):
         }
 
         while next_url:
-            soup = fetch(session, next_url, next_params)
+            soup = fetch(session, next_url, next_params, delay=DELAY_LIST)
             next_params = None
 
             if not soup:
@@ -360,205 +362,385 @@ def collect_all_urls(session):
 
 
 # ═══════════════════════════════════════════
-# PHASE 2: Detail-Parsing v5 (10 neue Felder)
+# Fix 3: extract_antragsfrist() – erweiterte Keywords
 # ═══════════════════════════════════════════
 
 def extract_antragsfrist(soup, text):
-    """Extrahiert Antragsfrist aus Detail-Seite."""
-    # Suche in <dt>/<dd> Paaren
-    for dt in soup.select("dt"):
-        label = dt.get_text(strip=True).lower()
-        if "frist" in label or "antragstermin" in label or "laufzeit" in label:
-            dd = dt.find_next_sibling("dd")
-            if dd:
-                val = dd.get_text(strip=True)
-                if val:
-                    # Datum im Format DD.MM.YYYY
-                    m = re.search(r'(\d{1,2}\.\d{1,2}\.\d{4})', val)
-                    if m:
-                        return m.group(1)
-                    if any(kw in val.lower() for kw in ["laufend", "fortlaufend", "jederzeit", "keine frist"]):
-                        return "laufend"
-                    return val[:100]
-    # Regex-Fallback im Text
-    m = re.search(r'(?:Antragsfrist|Frist|Stichtag)[:\s]*(\d{1,2}\.\d{1,2}\.\d{4})', text, re.I)
-    if m:
-        return m.group(1)
-    return None
+    """Extrahiert Antragsfrist. Fix 3: Mehr Keywords, Fulltext-Regex überall."""
+    try:
+        # Erweiterte Keywords für <dt> Labels
+        frist_keywords = [
+            "frist", "antragsfrist", "antragstermin", "bewerbungsfrist",
+            "bewilligungsfrist", "stichtag", "einreichungsfrist",
+            "abgabefrist", "deadline", "termin", "bewerbungsschluss",
+            "antragsschluss", "einsendeschluss",
+        ]
 
+        laufend_keywords = [
+            "laufend", "fortlaufend", "jederzeit", "keine frist",
+            "ohne frist", "unbefristet", "dauerhaft", "permanent",
+            "bis auf weiteres", "zeitlich unbegrenzt",
+        ]
+
+        # 1. Suche in <dt>/<dd> Paaren
+        for dt in soup.select("dt"):
+            label = dt.get_text(strip=True).lower().rstrip(":")
+            if any(kw in label for kw in frist_keywords):
+                dd = dt.find_next_sibling("dd")
+                if dd:
+                    val = dd.get_text(strip=True)
+                    if val:
+                        # Datum DD.MM.YYYY
+                        m = re.search(r'(\d{1,2}\.\d{1,2}\.\d{4})', val)
+                        if m:
+                            return m.group(1)
+                        # Laufend-Keywords
+                        if any(kw in val.lower() for kw in laufend_keywords):
+                            return "laufend"
+                        return val[:100]
+
+        # 2. Regex-Fallback im GESAMTEN Text (nicht nur am Anfang)
+        frist_patterns = [
+            r'(?:Antragsfrist|Antragsschluss|Bewerbungsfrist|Stichtag|Einreichungsfrist|Abgabefrist)[:\s]*(\d{1,2}\.\d{1,2}\.\d{4})',
+            r'(?:bis|zum)\s+(\d{1,2}\.\d{1,2}\.\d{4})\s+(?:einzureichen|beantragt|eingereicht)',
+            r'Frist[:\s]*(\d{1,2}\.\d{1,2}\.\d{4})',
+        ]
+        for pattern in frist_patterns:
+            m = re.search(pattern, text, re.I)
+            if m:
+                return m.group(1)
+
+        # 3. Laufend-Check im Volltext
+        text_lower = text.lower()
+        if any(kw in text_lower for kw in ["anträge können jederzeit", "laufend möglich", "fortlaufend gestellt"]):
+            return "laufend"
+
+        return None
+    except Exception as e:
+        log_error("", "ExtractAntragsfrist", str(e), "extract")
+        return None
+
+
+# ═══════════════════════════════════════════
+# Fix 4: extract_rechtsgrundlagen() – erweiterte Keywords
+# ═══════════════════════════════════════════
 
 def extract_rechtsgrundlagen(soup, text):
-    """Extrahiert Rechtsgrundlagen (max 2)."""
-    result = []
-    for dt in soup.select("dt"):
-        if "rechtsgrundlage" in dt.get_text(strip=True).lower():
-            dd = dt.find_next_sibling("dd")
-            if dd:
-                val = dd.get_text(strip=True)
-                # Aufteilen wenn mehrere durch Komma/Semikolon getrennt
-                parts = re.split(r'[;,]', val)
-                for p in parts[:2]:
-                    cleaned = p.strip()[:200]
-                    if cleaned:
-                        result.append(cleaned)
-    if not result:
-        # Regex-Fallback: suche §-Zeichen
-        matches = re.findall(r'(§\s*\d+[a-zA-Z]?\s*(?:Abs\.\s*\d+)?\s*\w{2,30})', text)
-        result = [m.strip() for m in matches[:2]]
-    return result
+    """Extrahiert Rechtsgrundlagen (max 2). Fix 4: Mehr Keywords, Fallback-Regex."""
+    try:
+        result = []
+        rg_keywords = [
+            "rechtsgrundlage", "rechtliche grundlage", "gesetzliche grundlage",
+            "basis", "verordnung", "richtlinie", "rechtsbasis", "grundlage",
+            "rechtsquelle", "förderrichtlinie", "verwaltungsvorschrift",
+        ]
 
+        for dt in soup.select("dt"):
+            label = dt.get_text(strip=True).lower().rstrip(":")
+            if any(kw in label for kw in rg_keywords):
+                dd = dt.find_next_sibling("dd")
+                if dd:
+                    val = dd.get_text(strip=True)
+                    parts = re.split(r'[;,]', val)
+                    for p in parts[:2]:
+                        cleaned = p.strip()[:200]
+                        if cleaned and len(cleaned) > 3:
+                            result.append(cleaned)
+
+        # Fallback-Regex: typische Patterns im Text
+        if not result:
+            patterns = [
+                r'((?:KfW|BAFA|EU|ERP|ESF|EFRE|GAK)\s*[-–]?\s*(?:Förder)?[Rr]ichtlinie[^\.,;]{0,80})',
+                r'(§\s*\d+[a-zA-Z]?\s*(?:Abs\.\s*\d+)?\s*\w{2,40})',
+                r'((?:Verordnung|Richtlinie|Verwaltungsvorschrift)\s+(?:\((?:EU|EG)\)\s*)?\w[^\.,;]{5,80})',
+                r'(Bundesgesetzblatt[^\.,;]{5,80})',
+            ]
+            for pattern in patterns:
+                matches = re.findall(pattern, text)
+                for m in matches[:2]:
+                    cleaned = m.strip()[:200]
+                    if cleaned and cleaned not in result:
+                        result.append(cleaned)
+                if len(result) >= 2:
+                    break
+
+        return result[:2]
+    except Exception as e:
+        log_error("", "ExtractRechtsgrundlagen", str(e), "extract")
+        return []
+
+
+# ═══════════════════════════════════════════
+# Fix 5: extract_foerderquote() – mehr Patterns
+# ═══════════════════════════════════════════
 
 def extract_foerderquote(text):
-    """Extrahiert Förderquote als int (1-100)."""
-    # "bis zu 80%", "max. 50%", "Zuschuss von 60%"
-    m = re.search(r'(?:bis\s+(?:zu\s+)?|max\.?\s*|Zuschuss\s+(?:von\s+)?)(\d{1,3})\s*%', text, re.I)
-    if m:
-        val = int(m.group(1))
-        if 1 <= val <= 100:
-            return val
-    # "50 Prozent"
-    m = re.search(r'(\d{1,3})\s*Prozent', text, re.I)
-    if m:
-        val = int(m.group(1))
-        if 1 <= val <= 100:
-            return val
-    return None
+    """Extrahiert Förderquote als int (1-100). Fix 5: Mehr Patterns."""
+    try:
+        patterns = [
+            r'(?:Förder(?:quote|satz|anteil))[:\s]*(?:bis\s+(?:zu\s+)?)?(\d{1,3})\s*(?:%|Prozent)',
+            r'(?:bis\s+(?:zu\s+)?|max\.?\s*|maximal\s+)(\d{1,3})\s*(?:%|Prozent)\s*(?:der|Zuschuss|Förderung|Quote)',
+            r'(?:Zuschuss|Förderung)\s+(?:von\s+)?(?:bis\s+(?:zu\s+)?)?(\d{1,3})\s*(?:%|Prozent)',
+            r'(\d{1,3})\s*(?:%|Prozent)\s*(?:der\s+(?:förderfähigen|zuwendungsfähigen)\s+(?:Kosten|Ausgaben))',
+            r'(?:bis\s+(?:zu\s+)?|max\.?\s*)(\d{1,3})\s*%',
+            r'Quote[:\s]*(\d{1,3})\s*%',
+            r'(\d{1,3})\s*Prozent\s*(?:Zuschuss|Förderung)',
+        ]
 
+        for pattern in patterns:
+            m = re.search(pattern, text, re.I)
+            if m:
+                val = int(m.group(1))
+                if 1 <= val <= 100:
+                    return val
+
+        return None
+    except Exception as e:
+        log_error("", "ExtractFoerderquote", str(e), "extract")
+        return None
+
+
+# ═══════════════════════════════════════════
+# Fix 6: extract_bearbeitungszeit() – mehr Keywords
+# ═══════════════════════════════════════════
 
 def extract_bearbeitungszeit(soup, text):
-    """Extrahiert geschätzte Bearbeitungszeit."""
-    for dt in soup.select("dt"):
-        if any(kw in dt.get_text(strip=True).lower() for kw in ["bearbeitungszeit", "laufzeit", "bewilligungszeitraum"]):
-            dd = dt.find_next_sibling("dd")
-            if dd:
-                val = dd.get_text(strip=True)
-                if val and len(val) < 100:
-                    return val
-    # Regex: "4-6 Wochen", "ca. 3 Monate"
-    m = re.search(r'(?:Bearbeitungszeit|Bewilligungszeitraum)[:\s]*(.{5,50}?)(?:\.|$)', text, re.I)
-    if m:
-        return m.group(1).strip()
-    return None
+    """Extrahiert Bearbeitungszeit. Fix 6: Mehr Keywords, Fallback-Regex."""
+    try:
+        zeit_keywords = [
+            "bearbeitungszeit", "bearbeitungsdauer", "laufzeit",
+            "bewilligungszeitraum", "dauer", "förderdauer",
+            "projektlaufzeit", "förderzeitraum", "durchführungszeitraum",
+        ]
 
+        for dt in soup.select("dt"):
+            label = dt.get_text(strip=True).lower().rstrip(":")
+            if any(kw in label for kw in zeit_keywords):
+                dd = dt.find_next_sibling("dd")
+                if dd:
+                    val = dd.get_text(strip=True)
+                    if val and 3 < len(val) < 100:
+                        return val
+
+        # Regex-Fallback im Text
+        zeit_patterns = [
+            r'(?:Bearbeitungszeit|Bearbeitungsdauer|Bewilligungszeitraum|Förderdauer|Projektlaufzeit)[:\s]*(.{5,60}?)(?:\.|$|\n)',
+            r'(?:Dauer|Laufzeit)[:\s]*(?:bis\s+(?:zu\s+)?)?((?:\d+[-–]\d+\s+(?:Wochen|Monate|Jahre))|(?:ca\.?\s*\d+\s+(?:Wochen|Monate|Jahre))|(?:max\.?\s*\d+\s+(?:Wochen|Monate|Jahre)))',
+        ]
+        for pattern in zeit_patterns:
+            m = re.search(pattern, text, re.I)
+            if m:
+                val = m.group(1).strip()
+                if val and 3 < len(val) < 80:
+                    return val
+
+        return None
+    except Exception as e:
+        log_error("", "ExtractBearbeitungszeit", str(e), "extract")
+        return None
+
+
+# ═══════════════════════════════════════════
+# Fix 7: extract_besonderheiten() – Inline-Text-Erkennung
+# ═══════════════════════════════════════════
 
 def extract_besonderheiten(soup, text):
-    """Extrahiert Besonderheiten (max 5)."""
-    result = []
-    # Suche nach "Besonderheiten", "Hinweise", "Wichtig"
-    for heading in soup.find_all(["h3", "h4"]):
-        if any(kw in heading.get_text(strip=True).lower() for kw in ["besonderheit", "hinweis", "voraussetzung", "kombination"]):
-            for sib in heading.find_next_siblings():
-                if sib.name in ("h2", "h3", "h4"):
-                    break
-                if sib.name in ("p", "li"):
-                    t = sib.get_text(strip=True)
-                    if t and len(t) > 10:
+    """Extrahiert Besonderheiten (max 5). Fix 7: Auch inline Text erkennen."""
+    try:
+        result = []
+
+        heading_keywords = [
+            "besonderheit", "hinweis", "wichtig", "voraussetzung",
+            "bedingung", "kombination", "kumulierung", "ergänzung",
+            "anmerkung", "sonstiges", "zusätzlich",
+        ]
+
+        # 1. Suche nach Headings
+        for heading in soup.find_all(["h2", "h3", "h4", "h5"]):
+            h_text = heading.get_text(strip=True).lower()
+            if any(kw in h_text for kw in heading_keywords):
+                for sib in heading.find_next_siblings():
+                    if sib.name in ("h2", "h3", "h4"):
+                        break
+                    if sib.name in ("p", "li"):
+                        t = sib.get_text(strip=True)
+                        if t and len(t) > 10:
+                            result.append(t[:200])
+                    if len(result) >= 5:
+                        break
+
+        # 2. Fallback: <li> mit bestimmten Keywords
+        if not result:
+            inline_keywords = [
+                "kombin", "kumulier", "de-minimis", "de minimis", "beihilfe",
+                "voraussetzung", "bedingung", "kofinanzier", "eigenanteil",
+                "nicht rückzahlbar", "rückzahlbar", "mindest",
+            ]
+            for li in soup.select("ul li, ol li"):
+                t = li.get_text(strip=True)
+                if t and len(t) > 12:
+                    t_lower = t.lower()
+                    if any(kw in t_lower for kw in inline_keywords):
                         result.append(t[:200])
                 if len(result) >= 5:
                     break
-    # Fallback: Liste im Text
-    if not result:
-        for li in soup.select("ul li"):
-            t = li.get_text(strip=True)
-            if t and len(t) > 15 and any(kw in t.lower() for kw in ["kombin", "kumulier", "de-minimis", "beihilfe", "voraussetzung"]):
-                result.append(t[:200])
-            if len(result) >= 5:
-                break
-    return result[:5]
 
+        # 3. Fallback: Sätze im Text mit Keywords
+        if not result:
+            sentences = re.split(r'[.!]\s+', text)
+            for s in sentences:
+                s_lower = s.lower()
+                if any(kw in s_lower for kw in ["de-minimis", "kumulier", "kombin", "kofinanzier"]):
+                    cleaned = s.strip()[:200]
+                    if cleaned and len(cleaned) > 15:
+                        result.append(cleaned)
+                if len(result) >= 5:
+                    break
+
+        return result[:5]
+    except Exception as e:
+        log_error("", "ExtractBesonderheiten", str(e), "extract")
+        return []
+
+
+# ═══════════════════════════════════════════
+# Fix 8: extract_kontakte() – Plain-Text Email+Tel
+# ═══════════════════════════════════════════
 
 def extract_kontakte(soup):
-    """Extrahiert Kontaktdaten."""
-    kontakte = []
-    # E-Mails
-    for a in soup.select("a[href^='mailto:']"):
-        email = a.get("href", "").replace("mailto:", "").strip()
-        if email and "@" in email:
-            kontakte.append({"typ": "email", "wert": email})
-    # Telefon
-    for a in soup.select("a[href^='tel:']"):
-        tel = a.get("href", "").replace("tel:", "").strip()
-        if tel:
-            kontakte.append({"typ": "telefon", "wert": tel})
-    # Regex-Fallback für Telefon
-    if not any(k["typ"] == "telefon" for k in kontakte):
-        text = soup.get_text()
-        m = re.search(r'(?:Tel\.?|Telefon)[:\s]*([\d\s/\-+()]{8,20})', text)
-        if m:
-            kontakte.append({"typ": "telefon", "wert": m.group(1).strip()})
-    # Weiterführende Links
-    for dt in soup.select("dt"):
-        if "weiterführende" in dt.get_text(strip=True).lower():
-            dd = dt.find_next_sibling("dd")
-            if dd:
-                for lnk in dd.select("a[href]")[:3]:
-                    href = lnk.get("href", "")
-                    if href.startswith("http"):
-                        kontakte.append({"typ": "link", "wert": href})
-    return kontakte[:10]  # Max 10
+    """Extrahiert Kontaktdaten. Fix 8: Plain-Text Email+Tel Regex."""
+    try:
+        kontakte = []
+        seen = set()
+
+        # E-Mails aus <a href="mailto:">
+        for a in soup.select("a[href^='mailto:']"):
+            email = a.get("href", "").replace("mailto:", "").strip().split("?")[0]
+            if email and "@" in email and email not in seen:
+                kontakte.append({"typ": "email", "wert": email})
+                seen.add(email)
+
+        # Fix 8: E-Mails als Plain-Text im HTML
+        text = soup.get_text(" ", strip=True)
+        email_pattern = r'[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}'
+        for m in re.finditer(email_pattern, text):
+            email = m.group(0).strip().rstrip(".")
+            if email not in seen and len(email) < 80:
+                kontakte.append({"typ": "email", "wert": email})
+                seen.add(email)
+
+        # Telefon aus <a href="tel:">
+        for a in soup.select("a[href^='tel:']"):
+            tel = a.get("href", "").replace("tel:", "").strip()
+            if tel and tel not in seen:
+                kontakte.append({"typ": "telefon", "wert": tel})
+                seen.add(tel)
+
+        # Fix 8: Telefonnummern als Plain-Text (verschiedene Formate)
+        tel_patterns = [
+            r'(?:Tel\.?|Telefon|Fon|Phone|Ruf)[:\s]*([\d\s/\-+()]{8,25})',
+            r'(\+49[\s\-./]?\(?\d{2,5}\)?[\s\-./]?\d{3,8}[\s\-./]?\d{0,5})',
+            r'(\(0\d{2,5}\)\s*[\d\s\-/]{5,15})',
+            r'(0\d{2,4}[\s/\-]\d{3,8}[\s\-]?\d{0,5})',
+        ]
+        for pattern in tel_patterns:
+            for m in re.finditer(pattern, text):
+                tel = m.group(1).strip()
+                # Normalisieren: nur Ziffern+Sonderzeichen
+                tel_clean = re.sub(r'[^\d+\-/() ]', '', tel).strip()
+                if tel_clean and len(tel_clean) >= 8 and tel_clean not in seen:
+                    kontakte.append({"typ": "telefon", "wert": tel_clean})
+                    seen.add(tel_clean)
+                    break  # Nur erste Telefonnummer pro Pattern
+
+        # Weiterführende Links aus <dt>/<dd>
+        for dt in soup.select("dt"):
+            label = dt.get_text(strip=True).lower()
+            if any(kw in label for kw in ["weiterführende", "weitere information", "link"]):
+                dd = dt.find_next_sibling("dd")
+                if dd:
+                    for lnk in dd.select("a[href]")[:3]:
+                        href = lnk.get("href", "")
+                        if href.startswith("http") and href not in seen:
+                            kontakte.append({"typ": "link", "wert": href})
+                            seen.add(href)
+
+        return kontakte[:10]
+    except Exception as e:
+        log_error("", "ExtractKontakte", str(e), "extract")
+        return []
 
 
 def detect_zielgruppen(text):
-    """Erkennt erweiterte Zielgruppen aus Text."""
-    txt = text.lower()
-    found = set()
-    for gruppe, keywords in ZIELGRUPPEN_KW.items():
-        for kw in keywords:
-            if kw in txt:
-                found.add(gruppe)
-                break
-    return sorted(found)
+    try:
+        txt = text.lower()
+        found = set()
+        for gruppe, keywords in ZIELGRUPPEN_KW.items():
+            for kw in keywords:
+                if kw in txt:
+                    found.add(gruppe)
+                    break
+        return sorted(found)
+    except:
+        return []
 
 
 def detect_finanzierungsform(text):
-    """Erkennt erweiterte Finanzierungsformen."""
-    txt = text.lower()
-    found = set()
-    for form, keywords in FINANZIERUNG_KW.items():
-        for kw in keywords:
-            if kw in txt:
-                found.add(form)
-                break
-    return sorted(found)
+    try:
+        txt = text.lower()
+        found = set()
+        for form, keywords in FINANZIERUNG_KW.items():
+            for kw in keywords:
+                if kw in txt:
+                    found.add(form)
+                    break
+        return sorted(found)
+    except:
+        return []
 
 
 def assess_data_quality(prog):
-    """Bewertet Datenqualität basierend auf Feldvollständigkeit."""
-    score = 0
-    if prog.get("beschreibung") and len(prog["beschreibung"]) > 50:
-        score += 2
-    if prog.get("foerdergeber"):
-        score += 1
-    if prog.get("url_antrag"):
-        score += 1
-    if prog.get("volumen_max_eur", 0) > 0:
-        score += 1
-    if prog.get("foerderquote") is not None:
-        score += 1
-    if prog.get("kontakte"):
-        score += 1
-    if prog.get("antragsfrist"):
-        score += 1
-    if prog.get("rechtsgrundlagen"):
-        score += 1
-    if prog.get("besonderheiten"):
-        score += 1
+    try:
+        score = 0
+        if prog.get("beschreibung") and len(prog["beschreibung"]) > 50:
+            score += 2
+        if prog.get("foerdergeber"):
+            score += 1
+        if prog.get("url_antrag"):
+            score += 1
+        if prog.get("volumen_max_eur", 0) > 0:
+            score += 1
+        if prog.get("foerderquote") is not None:
+            score += 1
+        if prog.get("kontakte"):
+            score += 1
+        if prog.get("antragsfrist"):
+            score += 1
+        if prog.get("rechtsgrundlagen"):
+            score += 1
+        if prog.get("besonderheiten"):
+            score += 1
 
-    if score >= 7:
-        return "vollstaendig"
-    elif score >= 4:
-        return "unvollstaendig"
-    return "minimal"
+        if score >= 7:
+            return "vollstaendig"
+        elif score >= 4:
+            return "unvollstaendig"
+        return "minimal"
+    except:
+        return "minimal"
 
+
+# ═══════════════════════════════════════════
+# PHASE 2: Detail-Parsing v5.1
+# ═══════════════════════════════════════════
 
 def fetch_details(session, all_programmes, fast_mode=False):
-    """Phase 2: Detailseiten abrufen mit v5-Feldern."""
     programmes = []
     total = len(all_programmes)
     errors = 0
 
     print(f"\n{'='*60}", flush=True)
-    print(f"PHASE 2: {total} Detailseiten abrufen (v5)", flush=True)
+    print(f"PHASE 2: {total} Detailseiten abrufen (v5.1)", flush=True)
     print(f"{'='*60}\n", flush=True)
 
     for i, (url, info) in enumerate(all_programmes.items()):
@@ -577,10 +759,9 @@ def fetch_details(session, all_programmes, fast_mode=False):
                 errors += 1
                 log_error(url, "ParseFailed", "Konnte Programm nicht verarbeiten", "detail")
         except Exception as e:
-            # SKIP statt ABORT – Kernfeature von v5
+            # Fix 11: SKIP statt ABORT
             errors += 1
             log_error(url, type(e).__name__, str(e), "detail")
-            # Fallback: Listendaten verwenden
             try:
                 prog = build_programme_from_list(url, info)
                 if prog:
@@ -618,14 +799,13 @@ def build_programme_from_list(url, info):
         name=name, url_quelle=url, beschreibung=beschreibung,
         foerdergeber=meta.get("Fördergeber"), foerderart=foerderart,
         bundeslaender=info["bundeslaender"], raw_text=raw_text,
-        # v5 Felder: minimal bei Listendaten
         antragsfrist=None, rechtsgrundlagen=[], foerderquote=None,
         bearbeitungszeit=None, besonderheiten=[], kontakte=[],
     )
 
 
 def parse_detail_v5(session, url, info):
-    """Parse Detail-Seite mit v5 Feldern."""
+    """Parse Detail-Seite mit v5.1 Fixes."""
     soup = fetch(session, url, delay=DELAY_DETAIL)
     if not soup:
         return build_programme_from_list(url, info)
@@ -647,68 +827,82 @@ def parse_detail_v5(session, url, info):
     foerderberechtigte = None
     foerderbereich = None
 
-    for dt in soup.select("dt"):
-        dd = dt.find_next_sibling("dd")
-        if not dd:
-            continue
-        label = dt.get_text(strip=True).rstrip(":").lower()
-        value = dd.get_text(strip=True)
+    # Fix 11: Try-Except um dt/dd Parsing
+    try:
+        for dt in soup.select("dt"):
+            dd = dt.find_next_sibling("dd")
+            if not dd:
+                continue
+            label = dt.get_text(strip=True).rstrip(":").lower()
+            value = dd.get_text(strip=True)
 
-        if "förderart" in label:
-            for k, v in ART_MAP.items():
-                if k in value.lower():
-                    prog["foerderart"] = v
-                    break
-        elif "fördergebiet" in label:
-            foerdergebiet = value
-        elif "förderberechtigte" in label:
-            foerderberechtigte = value
-        elif "förderbereich" in label:
-            foerderbereich = value
-        elif "fördergeber" in label:
-            link = dd.select_one("a")
-            prog["foerdergeber"] = link.get_text(strip=True) if link else value
-        elif "weiterführende" in label:
-            for lnk in dd.select("a[href]"):
-                h = lnk.get("href", "")
-                t = lnk.get_text(strip=True).lower()
-                if any(x in t for x in ["antrag", "bewerb", "portal", "online"]) or \
-                   any(x in h for x in ["antrag", "kfw.de", "bafa.de", "exist.de"]):
-                    if h.startswith("http"):
-                        prog["url_antrag"] = h
+            if "förderart" in label:
+                for k, v in ART_MAP.items():
+                    if k in value.lower():
+                        prog["foerderart"] = v
                         break
+            elif "fördergebiet" in label:
+                foerdergebiet = value
+            elif "förderberechtigte" in label:
+                foerderberechtigte = value
+            elif "förderbereich" in label:
+                foerderbereich = value
+            elif "fördergeber" in label:
+                link = dd.select_one("a")
+                prog["foerdergeber"] = link.get_text(strip=True) if link else value
+            elif "weiterführende" in label:
+                for lnk in dd.select("a[href]"):
+                    h = lnk.get("href", "")
+                    t = lnk.get_text(strip=True).lower()
+                    if any(x in t for x in ["antrag", "bewerb", "portal", "online"]) or \
+                       any(x in h for x in ["antrag", "kfw.de", "bafa.de", "exist.de"]):
+                        if h.startswith("http"):
+                            prog["url_antrag"] = h
+                            break
+    except Exception as e:
+        log_error(url, "DTDDParsing", str(e), "detail")
 
-    # Beschreibung
-    for tag_text in ["Kurztext", "Volltext"]:
-        h3 = soup.find("h3", string=re.compile(tag_text, re.I))
-        if h3:
-            parts = []
-            for sib in h3.find_next_siblings():
-                if sib.name in ("h2", "h3"):
-                    break
-                if sib.name == "p":
-                    t = sib.get_text(strip=True)
-                    if t:
-                        parts.append(t)
-                if len(parts) >= 6:
-                    break
-            if parts:
-                prog["beschreibung"] = " ".join(parts)[:800]
-                break
+    # Fix 9: Beschreibung – 2000 Zeichen, Kurztext + Volltext kombinieren
+    try:
+        beschreibung_parts = []
+        for tag_text in ["Kurztext", "Volltext"]:
+            h3 = soup.find("h3", string=re.compile(tag_text, re.I))
+            if h3:
+                parts = []
+                for sib in h3.find_next_siblings():
+                    if sib.name in ("h2", "h3"):
+                        break
+                    if sib.name == "p":
+                        t = sib.get_text(strip=True)
+                        if t:
+                            parts.append(t)
+                    if len(" ".join(parts)) > 2000:
+                        break
+                if parts:
+                    beschreibung_parts.append(" ".join(parts))
 
-    if not prog["beschreibung"]:
-        meta = info["meta"]
-        bits = []
-        if meta.get("Was wird gefördert?"):
-            bits.append(meta["Was wird gefördert?"])
-        if meta.get("Wer wird gefördert?"):
-            bits.append(meta["Wer wird gefördert?"])
-        prog["beschreibung"] = " | ".join(bits) if bits else None
+        # Kombiniere Kurztext + Volltext wenn beide vorhanden
+        if beschreibung_parts:
+            combined = " ".join(beschreibung_parts)
+            prog["beschreibung"] = combined[:2000]  # Fix 9: 2000 statt 800
+        else:
+            meta = info["meta"]
+            bits = []
+            if meta.get("Was wird gefördert?"):
+                bits.append(meta["Was wird gefördert?"])
+            if meta.get("Wer wird gefördert?"):
+                bits.append(meta["Wer wird gefördert?"])
+            prog["beschreibung"] = " | ".join(bits) if bits else None
+    except Exception as e:
+        log_error(url, "BeschreibungParsing", str(e), "detail")
 
     # Eigenanteil
-    ea_match = re.search(r'(\d{1,3})\s*%\s*(?:Eigen|eigen)', prog["beschreibung"] or "", re.I)
-    if ea_match:
-        prog["eigenanteil_prozent"] = int(ea_match.group(1))
+    try:
+        ea_match = re.search(r'(\d{1,3})\s*%\s*(?:Eigen|eigen)', prog["beschreibung"] or "", re.I)
+        if ea_match:
+            prog["eigenanteil_prozent"] = int(ea_match.group(1))
+    except:
+        pass
 
     # Bundesländer
     bundeslaender = list(info["bundeslaender"])
@@ -716,13 +910,13 @@ def parse_detail_v5(session, url, info):
         if "BUND" not in bundeslaender:
             bundeslaender.append("BUND")
 
-    # Volltext für Keyword-Extraktion
+    # Fix 10: full_text auf 5000 Zeichen erhöht
     full_text = " ".join(filter(None, [
         foerderberechtigte, foerderbereich, prog["beschreibung"],
-        prog["name"], soup.get_text()[:2000],
+        prog["name"], soup.get_text()[:5000],  # war 2000
     ]))
 
-    # ═══ v5: Neue Felder extrahieren ═══
+    # ═══ v5.1: Neue Felder mit Try-Except (Fix 11) ═══
     antragsfrist = extract_antragsfrist(soup, full_text)
     rechtsgrundlagen = extract_rechtsgrundlagen(soup, full_text)
     foerderquote = extract_foerderquote(full_text)
@@ -732,13 +926,16 @@ def parse_detail_v5(session, url, info):
 
     # Beträge
     amounts = []
-    for m in re.finditer(r'([\d.]+)\s*(?:EUR|Euro|€)', prog["beschreibung"] or "", re.I):
-        try:
-            v = int(m.group(1).replace(".", ""))
-            if v > 0:
-                amounts.append(v)
-        except ValueError:
-            pass
+    try:
+        for m in re.finditer(r'([\d.]+)\s*(?:EUR|Euro|€)', prog["beschreibung"] or "", re.I):
+            try:
+                v = int(m.group(1).replace(".", ""))
+                if v > 0:
+                    amounts.append(v)
+            except ValueError:
+                pass
+    except:
+        pass
 
     result = build_final_programme(
         name=prog["name"], kurzname=prog["kurzname"],
@@ -764,10 +961,9 @@ def build_final_programme(name, url_quelle, beschreibung, foerdergeber,
                           antragsfrist=None, rechtsgrundlagen=None,
                           foerderquote=None, bearbeitungszeit=None,
                           besonderheiten=None, kontakte=None):
-    """Baut finales Programm-Dict mit v5 Feldern."""
+    """Baut finales Programm-Dict mit v5.1 Feldern."""
     txt = raw_text.lower()
 
-    # Phasen
     phasen = set()
     if any(k in txt for k in ["existenzgründ", "gründer", "gründung", "startup", "start-up"]):
         phasen.update(["ideation", "gruendung"])
@@ -780,7 +976,6 @@ def build_final_programme(name, url_quelle, beschreibung, foerdergeber,
     if not phasen:
         phasen = {"fruehphase", "wachstum"}
 
-    # Größen
     groessen = set()
     if any(k in txt for k in ["existenzgründ", "gründer", "freiberuf", "solo", "einzelunternehm"]):
         groessen.add("solo")
@@ -793,7 +988,6 @@ def build_final_programme(name, url_quelle, beschreibung, foerdergeber,
     if not groessen:
         groessen = {"mikro", "klein", "mittel"}
 
-    # Branchen (erweitert mit 50+ Keywords)
     slugs = set()
     for kw, slug in BRANCHE_KW.items():
         if kw in txt:
@@ -801,21 +995,22 @@ def build_final_programme(name, url_quelle, beschreibung, foerdergeber,
     if not slugs:
         slugs.add("branchenuebergreifend")
 
-    # Beträge
     vmax, vmin = 0, 0
     amounts = []
-    for m in re.finditer(r'([\d.]+)\s*(?:EUR|Euro|€)', beschreibung or "", re.I):
-        try:
-            v = int(m.group(1).replace(".", ""))
-            if v > 0:
-                amounts.append(v)
-        except ValueError:
-            pass
+    try:
+        for m in re.finditer(r'([\d.]+)\s*(?:EUR|Euro|€)', beschreibung or "", re.I):
+            try:
+                v = int(m.group(1).replace(".", ""))
+                if v > 0:
+                    amounts.append(v)
+            except ValueError:
+                pass
+    except:
+        pass
     if amounts:
         vmax = max(amounts)
         vmin = min(amounts) if len(amounts) > 1 else 0
 
-    # v5 Felder
     hat_deadline = antragsfrist is not None and antragsfrist != "laufend"
     zielgruppen = detect_zielgruppen(txt)
     finanzierungsform = detect_finanzierungsform(txt)
@@ -850,9 +1045,7 @@ def build_final_programme(name, url_quelle, beschreibung, foerdergeber,
         "aktiv": True,
     }
 
-    # Datenqualität bewerten
     prog["datenqualitaet"] = assess_data_quality(prog)
-
     return prog
 
 
@@ -871,7 +1064,7 @@ def export_to_supabase(programmes):
     sb = create_client(url, key)
     today = datetime.now().strftime("%Y-%m-%d")
 
-    print(f"\n📤 Schreibe {len(programmes)} Programme in Supabase (v5)...", flush=True)
+    print(f"\n📤 Schreibe {len(programmes)} Programme in Supabase (v5.1)...", flush=True)
 
     BATCH = 50
     upserted = 0
@@ -917,8 +1110,7 @@ def export_to_supabase(programmes):
         except Exception as e:
             print(f"\n  ❌ Batch-Fehler: {e}", flush=True)
             errors += len(batch)
-            # Einzeln versuchen bei Batch-Fehler
-            for row in batch:
+            for row in rows:
                 try:
                     sb.table("programme").upsert([row], on_conflict="url_quelle").execute()
                     upserted += 1
@@ -937,7 +1129,7 @@ def export_to_supabase(programmes):
     except Exception as e:
         log_error("", "StaleCheck", str(e), "upsert")
 
-    # Error-Log in Supabase
+    # Fix 12: Error-Log in Supabase
     export_errors_supabase(sb)
 
     print(f"\n  ✅ Supabase: {upserted} upserted, {errors} Fehler", flush=True)
@@ -959,7 +1151,7 @@ def export_to_json(programmes, path="data/foerderprogramme.json"):
 # ═══════════════════════════════════════════
 
 def main():
-    ap = argparse.ArgumentParser(description="Förderly Scraper v5.0")
+    ap = argparse.ArgumentParser(description="Förderly Scraper v5.1")
     ap.add_argument("--test", action="store_true", help="Testlauf: 5 Programme")
     ap.add_argument("--fast", action="store_true", help="Nur Listendaten")
     ap.add_argument("--json-only", action="store_true", help="Nur JSON")
@@ -971,7 +1163,7 @@ def main():
     session.headers.update(HEADERS)
 
     print(f"\n{'='*60}", flush=True)
-    print(f"  FÖRDERLY SCRAPER v5.0", flush=True)
+    print(f"  FÖRDERLY SCRAPER v5.1", flush=True)
     print(f"  {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", flush=True)
     print(f"{'='*60}\n", flush=True)
 
@@ -980,7 +1172,6 @@ def main():
         export_error_csv()
         sys.exit(1)
 
-    # PHASE 1
     print("\n═══ PHASE 1: URLs sammeln ═══\n", flush=True)
     all_programmes = collect_all_urls(session)
     print(f"\n📊 {len(all_programmes)} einzigartige Programme\n", flush=True)
@@ -993,7 +1184,6 @@ def main():
         export_error_csv()
         sys.exit(1)
 
-    # PHASE 2
     programmes = fetch_details(session, all_programmes, fast_mode=args.fast)
 
     if not programmes:
@@ -1001,7 +1191,6 @@ def main():
         export_error_csv()
         sys.exit(1)
 
-    # PHASE 3
     print(f"\n═══ PHASE 3: Export ({len(programmes)} Programme) ═══\n", flush=True)
     if args.json_only:
         export_to_json(programmes, args.output)
@@ -1010,7 +1199,6 @@ def main():
         if args.json_backup or not success:
             export_to_json(programmes, args.output)
 
-    # Error-Log immer exportieren
     export_error_csv()
 
     # Stats
@@ -1020,12 +1208,16 @@ def main():
         quality_stats[q] = quality_stats.get(q, 0) + 1
 
     deadline_count = sum(1 for p in programmes if p.get("hat_deadline"))
+    kontakte_count = sum(1 for p in programmes if p.get("kontakte"))
+    frist_count = sum(1 for p in programmes if p.get("antragsfrist"))
 
-    print(f"\n📊 Datenqualität:", flush=True)
+    print(f"\n📊 Statistiken:", flush=True)
     print(f"   Vollständig: {quality_stats['vollstaendig']}", flush=True)
     print(f"   Unvollständig: {quality_stats['unvollstaendig']}", flush=True)
     print(f"   Minimal: {quality_stats['minimal']}", flush=True)
     print(f"   Mit Deadline: {deadline_count}", flush=True)
+    print(f"   Mit Antragsfrist: {frist_count}", flush=True)
+    print(f"   Mit Kontakten: {kontakte_count}", flush=True)
     print(f"   Fehler gesamt: {len(error_log)}", flush=True)
     print(f"\n🎉 Fertig!", flush=True)
 

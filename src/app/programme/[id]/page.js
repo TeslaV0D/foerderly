@@ -1,12 +1,7 @@
-/**
- * FÖRDERLY – Programm Detail-Seite (ISR)
- * /programme/[id]
- *
- * - Incremental Static Regeneration (24h revalidate)
- * - Top 100 bei Build (generateStaticParams)
- * - JSON-LD Schema
- * - Ähnliche Programme Widget
- */
+// src/app/programme/[id]/page.js
+// Fix 6: DataQualityBadge entfernt
+// Fix 10: Volumen "0 EUR" wird nicht angezeigt
+// Fix 11: Layout reordered – Details oben, Beschreibung unten, Ähnliche Programme größer
 
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -19,14 +14,11 @@ import ProgrammeSchema from '../../components/ProgrammeSchema';
 import SimilarProgrammes from '../../components/SimilarProgrammes';
 import DeadlineIndicator from '../../components/DeadlineIndicator';
 import ContactWidget from '../../components/ContactWidget';
-import DataQualityBadge from '../../components/DataQualityBadge';
 import ShareButtons from '../../components/ShareButtons';
 import FreshnessIndicator from '../../components/FreshnessIndicator';
 
-// ISR: 24h Revalidation
 export const revalidate = 86400;
 
-// Top 100 Programme bei Build vorrendern
 export async function generateStaticParams() {
   try {
     const ids = await getTopProgrammeIds(100);
@@ -36,7 +28,6 @@ export async function generateStaticParams() {
   }
 }
 
-// Dynamic Metadata
 export async function generateMetadata({ params }) {
   const { id } = await params;
   const programme = await getProgrammeById(id);
@@ -49,9 +40,7 @@ export async function generateMetadata({ params }) {
   return {
     title,
     description: programme.beschreibung?.slice(0, 160) || `Förderprogramm: ${programme.name}`,
-    alternates: {
-      canonical: `https://foerderly.com/programme/${programme.id}`,
-    },
+    alternates: { canonical: `https://foerderly.com/programme/${programme.id}` },
     openGraph: {
       title,
       description: programme.beschreibung?.slice(0, 160),
@@ -64,13 +53,12 @@ export async function generateMetadata({ params }) {
 export default async function ProgrammeDetailPage({ params }) {
   const { id } = await params;
   const programme = await getProgrammeById(id);
-
   if (!programme) notFound();
 
-  const similar = await getSimilarProgrammes(programme, 4);
-
+  const similar = await getSimilarProgrammes(programme, 6);
   const art = FOERDERARTEN[programme.foerderart] || FOERDERARTEN.zuschuss;
-  const hasVolumen = programme.volumen_min_eur || programme.volumen_max_eur;
+  // Fix 10: Nur anzeigen wenn > 0
+  const hasVolumen = programme.volumen_max_eur > 0;
   const pageUrl = `https://foerderly.com/programme/${programme.id}`;
 
   const breadcrumbs = [
@@ -86,25 +74,22 @@ export default async function ProgrammeDetailPage({ params }) {
       <Header />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-6 pb-6">
-        {/* Back Link */}
-        <Link
-          href="/search"
-          className="inline-flex items-center gap-1.5 text-sm mb-6 transition-colors"
-          style={{ color: 'var(--text-muted)' }}
-        >
+        <Link href="/search" className="inline-flex items-center gap-1.5 text-sm mb-6 transition-colors"
+          style={{ color: 'var(--text-muted)' }}>
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
           Zurück zur Suche
         </Link>
 
-        {/* Header Section */}
-        <div className="mb-8">
+        {/* Fix 11: Reordered Layout */}
+
+        {/* 1. Header (Name, Förderart) */}
+        <div className="mb-6">
           <div className="flex flex-wrap items-center gap-2 mb-3">
             <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium badge-${programme.foerderart}`}>
               {art.emoji} {art.label}
             </span>
-            <DataQualityBadge quality={programme.datenqualitaet} />
             <DeadlineIndicator antragsfrist={programme.antragsfrist} hatDeadline={programme.hat_deadline} />
           </div>
 
@@ -116,7 +101,6 @@ export default async function ProgrammeDetailPage({ params }) {
           </h1>
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{programme.foerdergeber}</p>
 
-          {/* Share + Freshness */}
           <div className="flex items-center gap-4 mt-4">
             <ShareButtons url={pageUrl} title={programme.name} />
             <FreshnessIndicator date={programme.aktualisiert_am} />
@@ -124,16 +108,16 @@ export default async function ProgrammeDetailPage({ params }) {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Förderhöhe */}
+
+            {/* 2. Fördervolumen-Box (Fix 10: nur wenn > 0) */}
             {hasVolumen && (
               <div className="rounded-2xl p-5" style={{ background: 'var(--accent-muted)', border: '1px solid rgba(52,211,153,0.15)' }}>
                 <p className="text-xs font-medium mb-1" style={{ color: 'var(--accent-text)' }}>Förderhöhe</p>
                 <p className="text-3xl font-bold" style={{ color: 'var(--accent-text)' }}>
                   {programme.volumen_min_eur === programme.volumen_max_eur
                     ? formatEuro(programme.volumen_max_eur)
-                    : `${formatEuro(programme.volumen_min_eur)} – ${formatEuro(programme.volumen_max_eur)}`}
+                    : `${programme.volumen_min_eur > 0 ? formatEuro(programme.volumen_min_eur) + ' – ' : 'bis '}${formatEuro(programme.volumen_max_eur)}`}
                 </p>
                 <div className="flex gap-4 mt-2">
                   {programme.eigenanteil_prozent > 0 && (
@@ -150,17 +134,59 @@ export default async function ProgrammeDetailPage({ params }) {
               </div>
             )}
 
-            {/* Beschreibung */}
+            {/* 3. Details-Grid – NACH OBEN (Fix 11) */}
+            <section>
+              <h2 className="text-lg font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Details</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <InfoCard label="Förderart" value={`${art.emoji} ${art.label}`} />
+                <InfoCard label="Eigenanteil" value={programme.eigenanteil_prozent > 0 ? `${programme.eigenanteil_prozent}%` : 'Keiner'} />
+                {programme.bearbeitungszeit && (
+                  <InfoCard label="Bearbeitungszeit" value={programme.bearbeitungszeit} />
+                )}
+                {programme.antragsfrist && (
+                  <InfoCard label="Antragsfrist" value={programme.antragsfrist} />
+                )}
+                {programme.foerderquote && (
+                  <InfoCard label="Förderquote" value={`bis ${programme.foerderquote}%`} />
+                )}
+              </div>
+            </section>
+
+            {/* 4. Tags – Bundesländer, Phasen, Größen, Branchen – NACH OBEN */}
+            <section className="space-y-4">
+              {programme.bundeslaender?.length > 0 && (
+                <TagGroup title="Fördergebiet"
+                  items={programme.bundeslaender.map(bl => bl === 'BUND' ? 'Bundesweit' : (BUNDESLAENDER[bl] || bl))}
+                  colorStyle={{ background: 'var(--violet-muted)', color: 'var(--violet-accent)' }} />
+              )}
+              {programme.phasen?.length > 0 && (
+                <TagGroup title="Geeignete Phasen"
+                  items={programme.phasen.map(ph => PHASEN[ph] || ph)}
+                  colorStyle={{ background: 'rgba(251,191,36,0.1)', color: '#fbbf24' }} />
+              )}
+              {programme.groessen?.length > 0 && (
+                <TagGroup title="Unternehmensgrößen"
+                  items={programme.groessen.map(gr => GROESSEN[gr] || gr)}
+                  colorStyle={{ background: 'rgba(244,114,182,0.1)', color: '#f472b6' }} />
+              )}
+              {programme.branchen?.length > 0 && (
+                <TagGroup title="Branchen"
+                  items={programme.branchen.map(br => br.name)}
+                  colorStyle={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)' }} />
+              )}
+            </section>
+
+            {/* 5. Beschreibung – NACH UNTEN (Fix 11) */}
             {programme.beschreibung && (
               <section>
                 <h2 className="text-lg font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Beschreibung</h2>
-                <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                <p className="text-sm leading-relaxed whitespace-pre-line" style={{ color: 'var(--text-secondary)' }}>
                   {programme.beschreibung}
                 </p>
               </section>
             )}
 
-            {/* Besonderheiten */}
+            {/* 6. Besonderheiten */}
             {programme.besonderheiten?.length > 0 && (
               <section>
                 <h2 className="text-lg font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Besonderheiten & Hinweise</h2>
@@ -187,101 +213,73 @@ export default async function ProgrammeDetailPage({ params }) {
               </section>
             )}
 
-            {/* Details Grid */}
-            <section>
-              <h2 className="text-lg font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Details</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                <InfoCard label="Förderart" value={`${art.emoji} ${art.label}`} />
-                <InfoCard label="Eigenanteil" value={programme.eigenanteil_prozent > 0 ? `${programme.eigenanteil_prozent}%` : 'Keiner'} />
-                {programme.bearbeitungszeit && (
-                  <InfoCard label="Bearbeitungszeit" value={programme.bearbeitungszeit} />
-                )}
-                {programme.antragsfrist && (
-                  <InfoCard label="Antragsfrist" value={programme.antragsfrist} />
-                )}
-              </div>
-            </section>
+            {/* Zielgruppen + Finanzierungsform */}
+            {programme.zielgruppen_erweitert?.length > 0 && (
+              <TagGroup title="Zielgruppen"
+                items={programme.zielgruppen_erweitert}
+                colorStyle={{ background: 'rgba(96,165,250,0.1)', color: '#93c5fd' }} />
+            )}
+            {programme.finanzierungsform_erweitert?.length > 0 && (
+              <TagGroup title="Finanzierungsform"
+                items={programme.finanzierungsform_erweitert}
+                colorStyle={{ background: 'rgba(167,139,250,0.1)', color: '#c4b5fd' }} />
+            )}
 
-            {/* Tags */}
-            <section className="space-y-4">
-              {programme.bundeslaender?.length > 0 && (
-                <TagGroup
-                  title="Fördergebiet"
-                  items={programme.bundeslaender.map(bl => bl === 'BUND' ? 'Bundesweit' : (BUNDESLAENDER[bl] || bl))}
-                  colorStyle={{ background: 'var(--violet-muted)', color: 'var(--violet-accent)' }}
-                />
-              )}
-              {programme.phasen?.length > 0 && (
-                <TagGroup
-                  title="Geeignete Phasen"
-                  items={programme.phasen.map(ph => PHASEN[ph] || ph)}
-                  colorStyle={{ background: 'rgba(251,191,36,0.1)', color: '#fbbf24' }}
-                />
-              )}
-              {programme.groessen?.length > 0 && (
-                <TagGroup
-                  title="Unternehmensgrößen"
-                  items={programme.groessen.map(gr => GROESSEN[gr] || gr)}
-                  colorStyle={{ background: 'rgba(244,114,182,0.1)', color: '#f472b6' }}
-                />
-              )}
-              {programme.branchen?.length > 0 && (
-                <TagGroup
-                  title="Branchen"
-                  items={programme.branchen.map(br => br.name)}
-                  colorStyle={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)' }}
-                />
-              )}
-              {programme.zielgruppen_erweitert?.length > 0 && (
-                <TagGroup
-                  title="Zielgruppen"
-                  items={programme.zielgruppen_erweitert}
-                  colorStyle={{ background: 'rgba(96,165,250,0.1)', color: '#93c5fd' }}
-                />
-              )}
-              {programme.finanzierungsform_erweitert?.length > 0 && (
-                <TagGroup
-                  title="Finanzierungsform"
-                  items={programme.finanzierungsform_erweitert}
-                  colorStyle={{ background: 'rgba(167,139,250,0.1)', color: '#c4b5fd' }}
-                />
-              )}
-            </section>
+            {/* 9. Ähnliche Programme – GRÖSSER, 2 Spalten (Fix 11) */}
+            {similar?.length > 0 && (
+              <section>
+                <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Ähnliche Programme</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {similar.filter(p => p.id !== programme.id).slice(0, 6).map(prog => {
+                    const simArt = FOERDERARTEN[prog.foerderart] || FOERDERARTEN.zuschuss;
+                    return (
+                      <Link key={prog.id} href={`/programme/${prog.id}`}
+                        className="card p-4 block transition-all">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <span className={`text-xs px-2 py-0.5 rounded-md font-medium badge-${prog.foerderart}`}>
+                            {simArt.emoji} {simArt.label}
+                          </span>
+                          {prog.volumen_max_eur > 0 && (
+                            <span className="text-xs font-semibold" style={{ color: 'var(--accent-text)' }}>
+                              {formatEuro(prog.volumen_max_eur)}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm font-medium line-clamp-2" style={{ color: 'var(--text-primary)' }}>
+                          {prog.kurzname || prog.name}
+                        </p>
+                        <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                          {prog.foerdergeber}
+                        </p>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
           </div>
 
           {/* Sidebar */}
           <div className="space-y-4">
-            {/* CTA Buttons */}
             <div className="rounded-2xl p-5 space-y-3" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)' }}>
               {programme.url_antrag && (
-                <a
-                  href={programme.url_antrag}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <a href={programme.url_antrag} target="_blank" rel="noopener noreferrer"
                   className="block w-full text-center px-4 py-3 text-sm font-medium rounded-xl transition-all"
-                  style={{ background: 'linear-gradient(135deg, var(--accent-start), var(--accent-end))', color: '#0f0f13' }}
-                >
+                  style={{ background: 'linear-gradient(135deg, var(--accent-start), var(--accent-end))', color: '#0f0f13' }}>
                   Zum Antrag →
                 </a>
               )}
               {programme.url_quelle && (
-                <a
-                  href={programme.url_quelle}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <a href={programme.url_quelle} target="_blank" rel="noopener noreferrer"
                   className="block w-full text-center px-4 py-3 text-sm font-medium rounded-xl transition-all"
-                  style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', color: 'var(--text-secondary)' }}
-                >
+                  style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', color: 'var(--text-secondary)' }}>
                   Originalquelle
                 </a>
               )}
             </div>
 
-            {/* Kontakte */}
+            {/* 8. Kontakt-Widget */}
             <ContactWidget kontakte={programme.kontakte} />
-
-            {/* Ähnliche Programme */}
-            <SimilarProgrammes programmes={similar} currentId={programme.id} />
           </div>
         </div>
 
@@ -291,7 +289,6 @@ export default async function ProgrammeDetailPage({ params }) {
   );
 }
 
-// Helper Components (inline, da nur hier verwendet)
 function InfoCard({ label, value }) {
   return (
     <div className="rounded-xl p-3" style={{ background: 'var(--bg-elevated)' }}>

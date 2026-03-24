@@ -1,3 +1,5 @@
+// src/app/layout.js
+// Fix 12: Favicon-Icons registriert, Tab-Title Format
 import './globals.css';
 import { IBM_Plex_Sans } from 'next/font/google';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -13,56 +15,37 @@ const ibmPlexSans = IBM_Plex_Sans({
 });
 
 export const metadata = {
-  // ─── Basis ───
   title: {
     default: 'Förderly – Fördermittel für Gründer, Startups & KMU',
-    template: '%s | Förderly',
+    template: 'Förderly – %s',
   },
   description:
     'Finde in Sekunden die passenden Förderprogramme für dein Unternehmen. Über 2.000 Programme von Bund, Ländern und EU – kostenlos, ohne Anmeldung.',
   keywords: [
-    'Fördermittel',
-    'Förderprogramme',
-    'Zuschuss',
-    'Gründer',
-    'Startup Förderung',
-    'KMU Förderung',
-    'KfW Kredit',
-    'BAFA Zuschuss',
-    'EXIST Stipendium',
-    'Förderdatenbank',
-    'Gründungszuschuss',
-    'Landesförderung',
-    'EU Förderung',
-    'Startup finanzieren',
+    'Fördermittel', 'Förderprogramme', 'Zuschuss', 'Gründer',
+    'Startup Förderung', 'KMU Förderung', 'KfW Kredit', 'BAFA Zuschuss',
+    'EXIST Stipendium', 'Förderdatenbank', 'Gründungszuschuss',
+    'Landesförderung', 'EU Förderung', 'Startup finanzieren',
     'Fördermittel Deutschland',
   ],
 
-  // ─── Canonical ───
-  alternates: {
-    canonical: 'https://foerderly.com',
-  },
+  alternates: { canonical: 'https://foerderly.com' },
 
-  // ─── Open Graph ───
   openGraph: {
     title: 'Förderly – Fördermittel für Gründer, Startups & KMU',
-    description:
-      'Finde in Sekunden die passenden Förderprogramme. Bund, Länder und EU – alles an einem Ort. Kostenlos, ohne Anmeldung.',
+    description: 'Finde in Sekunden die passenden Förderprogramme. Bund, Länder und EU – alles an einem Ort.',
     type: 'website',
     locale: 'de_DE',
     url: 'https://foerderly.com',
     siteName: 'Förderly',
   },
 
-  // ─── Twitter Cards ───
   twitter: {
     card: 'summary',
     title: 'Förderly – Fördermittel für Gründer, Startups & KMU',
-    description:
-      'Über 2.000 Förderprogramme von Bund, Ländern und EU. Kostenlos durchsuchen.',
+    description: 'Über 2.000 Förderprogramme von Bund, Ländern und EU. Kostenlos durchsuchen.',
   },
 
-  // ─── Robots ───
   robots: {
     index: true,
     follow: true,
@@ -75,7 +58,15 @@ export const metadata = {
     },
   },
 
-  // ─── Weitere Meta ───
+  // Fix 12: Favicon-Icons
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: '32x32' },
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+    ],
+    apple: '/apple-touch-icon.png',
+  },
+
   metadataBase: new URL('https://foerderly.com'),
   authors: [{ name: 'Förderly' }],
   creator: 'Förderly',
@@ -90,12 +81,9 @@ export default function RootLayout({ children }) {
         className="min-h-screen antialiased"
         style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
       >
-        {/* JSON-LD Structured Data (global) */}
         <WebsiteSchema />
-
         <ThemeProvider>
           <ErrorBoundary>{children}</ErrorBoundary>
-          {/* Cmd+K Global Search */}
           <CommandPalette />
         </ThemeProvider>
       </body>

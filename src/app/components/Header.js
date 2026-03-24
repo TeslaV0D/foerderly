@@ -1,3 +1,5 @@
+// src/app/components/Header.js
+// Fix 8: Hover-Animation auf Navigation-Links
 'use client';
 
 import Link from 'next/link';
@@ -38,7 +40,7 @@ export default function Header() {
           <span className="text-lg font-bold gradient-text">Förderly</span>
         </Link>
 
-        {/* Nav */}
+        {/* Nav – Fix 8: Hover-Animation */}
         <nav className="flex-1 flex items-center justify-center gap-1">
           {navLinks.map(({ href, label }) => {
             const isActive = pathname === href || (href === '/search' && pathname.startsWith('/search'));
@@ -46,10 +48,22 @@ export default function Header() {
               <Link
                 key={href}
                 href={href}
-                className="px-4 py-1.5 rounded-xl text-sm font-medium transition-all duration-200"
+                className="px-4 py-1.5 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105"
                 style={{
                   color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
                   background: isActive ? 'var(--accent-muted)' : 'transparent',
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = 'var(--bg-elevated)';
+                    e.currentTarget.style.color = 'var(--text-primary)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.color = 'var(--text-secondary)';
+                  }
                 }}
               >
                 {label}
@@ -58,15 +72,13 @@ export default function Header() {
           })}
         </nav>
 
-        {/* Right side: Cmd+K hint + Theme toggle */}
+        {/* Right side */}
         <div className="flex items-center gap-2">
-          {/* Cmd+K Shortcut Hint (desktop) */}
           <button
             onClick={() => {
-              // Trigger CommandPalette via keyboard event
               document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }));
             }}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs transition-all"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs transition-all cursor-pointer hover:scale-105"
             style={{
               background: 'var(--bg-elevated)',
               border: '1px solid var(--border-default)',
@@ -80,10 +92,9 @@ export default function Header() {
             <kbd className="text-[10px] px-1 py-0.5 rounded" style={{ background: 'var(--bg-card)' }}>⌘K</kbd>
           </button>
 
-          {/* Theme toggle */}
           <button
             onClick={toggle}
-            className="hidden sm:flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-200 shrink-0"
+            className="hidden sm:flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-200 shrink-0 hover:scale-110 cursor-pointer"
             style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)' }}
             aria-label={theme === 'dark' ? 'Helles Design aktivieren' : 'Dunkles Design aktivieren'}
           >

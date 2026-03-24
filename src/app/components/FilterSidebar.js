@@ -1,3 +1,6 @@
+// src/app/components/FilterSidebar.js
+// Fix 3: cursor-pointer auf alle Buttons, Selects, Inputs
+// Fix 9: Sidebar sticky auf Desktop
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -18,7 +21,6 @@ const BRANCHEN_OPTIONS = [
   { slug: 'bildung', label: 'Bildung' },
 ];
 
-/* ─── Custom Dropdown ─── */
 function CustomSelect({ label, value, options, onChange, placeholder = 'Alle' }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -38,10 +40,11 @@ function CustomSelect({ label, value, options, onChange, placeholder = 'Alle' })
       <label className="block text-[11px] font-medium uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>
         {label}
       </label>
+      {/* Fix 3: cursor-pointer */}
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-sm rounded-xl transition-all text-left"
+        className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-sm rounded-xl transition-all text-left cursor-pointer"
         style={{
           background: 'var(--bg-elevated)',
           border: open ? '1px solid var(--accent-solid)' : '1px solid var(--border-default)',
@@ -69,7 +72,7 @@ function CustomSelect({ label, value, options, onChange, placeholder = 'Alle' })
               key={opt.value}
               type="button"
               onClick={() => { onChange(opt.value); setOpen(false); }}
-              className="w-full text-left px-3 py-2 text-sm transition-colors"
+              className="w-full text-left px-3 py-2 text-sm transition-colors cursor-pointer"
               style={{
                 color: opt.value === value ? 'var(--accent-text)' : 'var(--text-secondary)',
                 background: opt.value === value ? 'var(--accent-muted)' : 'transparent',
@@ -90,7 +93,6 @@ function CustomSelect({ label, value, options, onChange, placeholder = 'Alle' })
   );
 }
 
-/* ─── Filter Sidebar ─── */
 export default function FilterSidebar({ filters, onChange, onSearch, loading }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const activeFilterCount = Object.entries(filters).filter(([k, v]) => v && k !== 'q').length;
@@ -118,40 +120,19 @@ export default function FilterSidebar({ filters, onChange, onSearch, loading }) 
 
   const filterContent = (
     <div className="space-y-4">
-      <CustomSelect
-        label="Bundesland"
-        value={filters.bundesland}
-        options={bundeslandOptions}
-        onChange={(v) => handleChange('bundesland', v)}
-        placeholder="Alle Bundesländer"
-      />
-      <CustomSelect
-        label="Phase"
-        value={filters.phase}
-        options={phasenOptions}
-        onChange={(v) => handleChange('phase', v)}
-        placeholder="Alle Phasen"
-      />
-      <CustomSelect
-        label="Unternehmensgröße"
-        value={filters.groesse}
-        options={groessenOptions}
-        onChange={(v) => handleChange('groesse', v)}
-        placeholder="Alle Größen"
-      />
-      <CustomSelect
-        label="Branche"
-        value={filters.branche}
-        options={branchenOptions}
-        onChange={(v) => handleChange('branche', v)}
-        placeholder="Alle Branchen"
-      />
+      <CustomSelect label="Bundesland" value={filters.bundesland} options={bundeslandOptions}
+        onChange={(v) => handleChange('bundesland', v)} placeholder="Alle Bundesländer" />
+      <CustomSelect label="Phase" value={filters.phase} options={phasenOptions}
+        onChange={(v) => handleChange('phase', v)} placeholder="Alle Phasen" />
+      <CustomSelect label="Unternehmensgröße" value={filters.groesse} options={groessenOptions}
+        onChange={(v) => handleChange('groesse', v)} placeholder="Alle Größen" />
+      <CustomSelect label="Branche" value={filters.branche} options={branchenOptions}
+        onChange={(v) => handleChange('branche', v)} placeholder="Alle Branchen" />
 
-      {/* Reset */}
       {activeFilterCount > 0 && (
         <button
           onClick={() => onChange({ bundesland: '', phase: '', groesse: '', branche: '', q: filters.q })}
-          className="w-full text-xs py-2 rounded-xl transition-all"
+          className="w-full text-xs py-2 rounded-xl transition-all cursor-pointer"
           style={{ color: 'var(--text-muted)', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)' }}
         >
           Filter zurücksetzen ({activeFilterCount})
@@ -162,11 +143,17 @@ export default function FilterSidebar({ filters, onChange, onSearch, loading }) 
 
   return (
     <>
-      {/* ─── Desktop Sidebar ─── */}
+      {/* ─── Desktop Sidebar – Fix 9: sticky ─── */}
       <aside className="hidden lg:block w-64 shrink-0">
         <div
           className="sticky rounded-2xl p-5"
-          style={{ top: 'calc(var(--header-height) + 1.5rem)', background: 'var(--bg-card)', border: '1px solid var(--border-default)' }}
+          style={{
+            top: 'calc(var(--header-height, 57px) + 1.5rem)',
+            maxHeight: 'calc(100vh - var(--header-height, 57px) - 3rem)',
+            overflowY: 'auto',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-default)',
+          }}
         >
           <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
             Filter
@@ -175,27 +162,27 @@ export default function FilterSidebar({ filters, onChange, onSearch, loading }) 
         </div>
       </aside>
 
-      {/* ─── Mobile: Search + collapsible filters ─── */}
+      {/* ─── Mobile ─── */}
       <div className="lg:hidden mb-4">
-        {/* Search */}
         <div
           className="rounded-2xl p-4 mb-3"
           style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)' }}
         >
           <div className="flex gap-2">
+            {/* Fix 3: cursor-pointer auf Input */}
             <input
               type="text"
               value={filters.q}
               onChange={(e) => handleChange('q', e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && onSearch()}
               placeholder="Förderprogramm suchen..."
-              className="flex-1 px-4 py-2.5 text-sm rounded-xl"
+              className="flex-1 px-4 py-2.5 text-sm rounded-xl cursor-text"
               style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', color: 'var(--text-primary)' }}
             />
             <button
               onClick={onSearch}
               disabled={loading}
-              className="px-5 py-2.5 font-medium text-sm rounded-xl transition-all shrink-0 disabled:opacity-50"
+              className="px-5 py-2.5 font-medium text-sm rounded-xl transition-all shrink-0 disabled:opacity-50 cursor-pointer"
               style={{ background: 'linear-gradient(135deg, var(--accent-start), var(--accent-end))', color: '#0f0f13' }}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -206,7 +193,7 @@ export default function FilterSidebar({ filters, onChange, onSearch, loading }) 
 
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="mt-3 flex items-center gap-2 text-sm transition-colors"
+            className="mt-3 flex items-center gap-2 text-sm transition-colors cursor-pointer"
             style={{ color: 'var(--text-secondary)' }}
           >
             <svg className={`w-4 h-4 transition-transform ${mobileOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -216,7 +203,6 @@ export default function FilterSidebar({ filters, onChange, onSearch, loading }) 
           </button>
         </div>
 
-        {/* Collapsible filters */}
         {mobileOpen && (
           <div
             className="rounded-2xl p-4 mb-3 animate-fade-up"
@@ -225,7 +211,7 @@ export default function FilterSidebar({ filters, onChange, onSearch, loading }) 
             {filterContent}
             <button
               onClick={() => { onSearch(); setMobileOpen(false); }}
-              className="mt-4 w-full py-2.5 text-sm font-medium rounded-xl"
+              className="mt-4 w-full py-2.5 text-sm font-medium rounded-xl cursor-pointer"
               style={{ background: 'linear-gradient(135deg, var(--accent-start), var(--accent-end))', color: '#0f0f13' }}
             >
               Filter anwenden
