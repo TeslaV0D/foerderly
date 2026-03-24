@@ -1,9 +1,8 @@
 'use client';
 
 /**
- * FÖRDERLY – WebsiteSchema (JSON-LD)
- * Organisation + WebSite-Schema für Google Knowledge Panel.
- * Wird einmalig im Root Layout eingebunden.
+ * FÖRDERLY – WebsiteSchema (JSON-LD) v2
+ * SearchAction zeigt jetzt auf /search statt /?q=
  */
 export default function WebsiteSchema() {
   const schema = [
@@ -17,7 +16,7 @@ export default function WebsiteSchema() {
         '@type': 'SearchAction',
         target: {
           '@type': 'EntryPoint',
-          urlTemplate: 'https://foerderly.com/?q={search_term_string}',
+          urlTemplate: 'https://foerderly.com/search?q={search_term_string}',
         },
         'query-input': 'required name=search_term_string',
       },
@@ -27,12 +26,14 @@ export default function WebsiteSchema() {
       '@type': 'Organization',
       name: 'Förderly',
       url: 'https://foerderly.com',
+      logo: 'https://foerderly.com/icon.svg',
       contactPoint: {
         '@type': 'ContactPoint',
         email: 'anton.mischenko321@proton.me',
         contactType: 'customer support',
         availableLanguage: 'German',
       },
+      sameAs: [],
     },
   ];
 

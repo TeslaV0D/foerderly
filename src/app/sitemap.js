@@ -3,10 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 const BASE_URL = 'https://foerderly.com';
 
 /**
- * FÖRDERLY – Dynamische Sitemap
- * Generiert /sitemap.xml automatisch via Next.js App Router.
- * Lädt alle aktiven Programme aus Supabase.
- * Fallback: nur statische Seiten falls DB nicht erreichbar.
+ * FÖRDERLY – Dynamische Sitemap v2
+ * Enthält jetzt auch /programme/[id] und /search URLs.
  */
 export default async function sitemap() {
   // ─── Statische Seiten ───
@@ -18,10 +16,22 @@ export default async function sitemap() {
       priority: 1.0,
     },
     {
+      url: `${BASE_URL}/search`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.9,
+    },
+    {
       url: `${BASE_URL}/quellen`,
       lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.7,
+    },
+    {
+      url: `${BASE_URL}/compare`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.4,
     },
     {
       url: `${BASE_URL}/impressum`,
@@ -37,8 +47,8 @@ export default async function sitemap() {
     },
   ];
 
-  // ─── Dynamische Programme aus Supabase ───
-  let programmePages = [];
+  // ─── Dynamische Programme-Detail-Seiten ───
+  let detailPages = [];
 
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -47,32 +57,28 @@ export default async function sitemap() {
     if (supabaseUrl && supabaseKey) {
       const supabase = createClient(supabaseUrl, supabaseKey);
 
-      // Alle aktiven Programme laden (url_quelle als canonical URL)
       const { data, error } = await supabase
         .from('programme')
-        .select('id, url_quelle, aktualisiert_am')
+        .select('id, aktualisiert_am')
         .eq('aktiv', true)
         .eq('status', 'aktiv')
         .order('id', { ascending: true })
         .limit(10000);
 
       if (!error && data) {
-        programmePages = data
-          .filter(p => p.url_quelle)
-          .map(p => ({
-            url: p.url_quelle,
-            lastModified: p.aktualisiert_am
-              ? new Date(p.aktualisiert_am)
-              : new Date(),
-            changeFrequency: 'weekly',
-            priority: 0.6,
-          }));
+        detailPages = data.map(p => ({
+          url: `${BASE_URL}/programme/${p.id}`,
+          lastModified: p.aktualisiert_am
+            ? new Date(p.aktualisiert_am)
+            : new Date(),
+          changeFrequency: 'weekly',
+          priority: 0.8,
+        }));
       }
     }
   } catch (err) {
-    // Fallback: nur statische Seiten ausliefern (kein Crash)
     console.error('[Sitemap] Supabase-Fehler:', err.message);
   }
 
-  return [...staticPages, ...programmePages];
+  return [...staticPages, ...detailPages];
 }

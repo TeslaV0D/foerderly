@@ -18,41 +18,40 @@ function loadJsonData() {
 }
 
 // ─── Supabase Query ───
-async function searchSupabase({ bundesland, phase, groesse, branche, foerderart, suchbegriff, sortBy, sortDir, page = 1, limit = 20 }) {
+async function searchSupabase({ bundesland, phase, groesse, branche, foerderart, suchbegriff, sortBy, sortDir, page = 1, limit = 20, minVolumen, maxVolumen, hatDeadline, datenqualitaet }) {
   let query = supabase
     .from('programme')
     .select('*', { count: 'exact' })
     .eq('aktiv', true)
     .eq('status', 'aktiv');
 
-  // Filters
   if (bundesland) {
     query = query.or(`bundeslaender.cs.{${bundesland}},bundeslaender.cs.{BUND}`);
   }
-  if (phase) {
-    query = query.contains('phasen', [phase]);
-  }
-  if (groesse) {
-    query = query.contains('groessen', [groesse]);
-  }
+  if (phase) query = query.contains('phasen', [phase]);
+  if (groesse) query = query.contains('groessen', [groesse]);
   if (branche) {
-    // Search in JSONB array: any object where slug matches
     query = query.or(`branchen.cs.[{"slug":"${branche}"}],branchen.cs.[{"slug":"branchenuebergreifend"}]`);
   }
-  if (foerderart) {
-    query = query.eq('foerderart', foerderart);
-  }
+  if (foerderart) query = query.eq('foerderart', foerderart);
+
+  // v5 Advanced Filter
+  if (minVolumen) query = query.gte('volumen_max_eur', parseInt(minVolumen));
+  if (maxVolumen) query = query.lte('volumen_max_eur', parseInt(maxVolumen));
+  if (hatDeadline === 'true') query = query.eq('hat_deadline', true);
+  if (datenqualitaet) query = query.eq('datenqualitaet', datenqualitaet);
+
   if (suchbegriff) {
-    // Use PostgreSQL full-text search
     const tsQuery = suchbegriff.split(/\s+/).filter(Boolean).join(' & ');
     query = query.textSearch('fts', tsQuery, { config: 'german' });
   }
 
-  // Sorting
+  // Sortierung
   const validSorts = {
     'volumen_desc': { column: 'volumen_max_eur', ascending: false },
     'volumen_asc': { column: 'volumen_max_eur', ascending: true },
     'name_asc': { column: 'name', ascending: true },
+    'name_desc': { column: 'name', ascending: false },
     'aktualisiert_desc': { column: 'aktualisiert_am', ascending: false },
     'aktualisiert_asc': { column: 'aktualisiert_am', ascending: true },
   };
@@ -63,11 +62,9 @@ async function searchSupabase({ bundesland, phase, groesse, branche, foerderart,
   if (sort) {
     query = query.order(sort.column, { ascending: sort.ascending, nullsFirst: false });
   } else {
-    // Default: Bundesland-spezifische zuerst, dann nach Name
     query = query.order('volumen_max_eur', { ascending: false, nullsFirst: true });
   }
 
-  // Pagination
   const from = (page - 1) * limit;
   const to = from + limit - 1;
   query = query.range(from, to);
@@ -94,20 +91,14 @@ function searchJson({ bundesland, phase, groesse, branche, foerderart, suchbegri
       p.bundeslaender.includes('EU')
     );
   }
-  if (phase) {
-    results = results.filter(p => p.phasen.includes(phase));
-  }
-  if (groesse) {
-    results = results.filter(p => p.groessen.includes(groesse));
-  }
+  if (phase) results = results.filter(p => p.phasen.includes(phase));
+  if (groesse) results = results.filter(p => p.groessen.includes(groesse));
   if (branche) {
     results = results.filter(p =>
       p.branchen.some(b => b.slug === branche || b.slug === 'branchenuebergreifend')
     );
   }
-  if (foerderart) {
-    results = results.filter(p => p.foerderart === foerderart);
-  }
+  if (foerderart) results = results.filter(p => p.foerderart === foerderart);
   if (suchbegriff) {
     const q = suchbegriff.toLowerCase();
     results = results.filter(p =>
@@ -115,14 +106,6 @@ function searchJson({ bundesland, phase, groesse, branche, foerderart, suchbegri
       p.beschreibung?.toLowerCase().includes(q) ||
       (p.kurzname && p.kurzname.toLowerCase().includes(q))
     );
-  }
-
-  if (bundesland) {
-    results.sort((a, b) => {
-      const aExact = a.bundeslaender.includes(bundesland) ? 1 : 0;
-      const bExact = b.bundeslaender.includes(bundesland) ? 1 : 0;
-      return bExact - aExact;
-    });
   }
 
   const total = results.length;
@@ -134,7 +117,6 @@ function searchJson({ bundesland, phase, groesse, branche, foerderart, suchbegri
 
 // ─── Public API ───
 export async function sucheForederungen(filters) {
-  // Try Supabase first, fall back to JSON
   if (supabase) {
     try {
       return await searchSupabase(filters);
@@ -149,13 +131,11 @@ export async function sucheForederungen(filters) {
 export async function getMeta() {
   if (supabase) {
     try {
-      // Get branchen from table
       const { data: branchen } = await supabase
         .from('branchen')
         .select('*')
         .order('name');
 
-      // Get total count
       const { count: total } = await supabase
         .from('programme')
         .select('*', { count: 'exact', head: true })

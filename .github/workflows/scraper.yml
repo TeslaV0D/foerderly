@@ -1,4 +1,4 @@
-name: Förderly Scraper
+name: Förderly Scraper v5
 
 on:
   schedule:
@@ -10,10 +10,11 @@ on:
         description: 'Max Programme gesamt'
         required: false
         default: '5000'
-      max_per_land:
-        description: 'Max pro Bundesland'
+      fast_mode:
+        description: 'Fast Mode (nur Listendaten)'
         required: false
-        default: '500'
+        default: 'false'
+        type: boolean
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -35,11 +36,16 @@ jobs:
       - name: Install Dependencies
         run: pip install requests beautifulsoup4 lxml supabase
 
-      - name: Run Scraper
+      - name: Run Scraper v5
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-        run: python scraper.py --json-backup
+        run: |
+          if [ "${{ inputs.fast_mode }}" = "true" ]; then
+            python scraper.py --fast --json-backup
+          else
+            python scraper.py --json-backup
+          fi
 
       - name: Upload JSON Backup
         if: always()
@@ -48,3 +54,12 @@ jobs:
           name: foerderprogramme-backup-${{ github.run_number }}
           path: data/foerderprogramme.json
           retention-days: 30
+
+      - name: Upload Error Log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scraper-errors-${{ github.run_number }}
+          path: data/scraper_errors.csv
+          retention-days: 30
+          if-no-files-found: ignore

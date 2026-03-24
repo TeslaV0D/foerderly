@@ -3,6 +3,7 @@ import { IBM_Plex_Sans } from 'next/font/google';
 import ErrorBoundary from './components/ErrorBoundary';
 import ThemeProvider from './components/ThemeProvider';
 import WebsiteSchema from './components/WebsiteSchema';
+import CommandPalette from './components/CommandPalette';
 
 const ibmPlexSans = IBM_Plex_Sans({
   subsets: ['latin'],
@@ -42,7 +43,7 @@ export const metadata = {
     canonical: 'https://foerderly.com',
   },
 
-  // ─── Open Graph (Facebook, LinkedIn, etc.) ───
+  // ─── Open Graph ───
   openGraph: {
     title: 'Förderly – Fördermittel für Gründer, Startups & KMU',
     description:
@@ -94,6 +95,8 @@ export default function RootLayout({ children }) {
 
         <ThemeProvider>
           <ErrorBoundary>{children}</ErrorBoundary>
+          {/* Cmd+K Global Search */}
+          <CommandPalette />
         </ThemeProvider>
       </body>
     </html>

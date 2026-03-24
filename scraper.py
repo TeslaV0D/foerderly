@@ -1,43 +1,36 @@
 """
-FÖRDERLY – Scraper v4.1 (Bugfix: GitHub Actions Hang)
-======================================================
-Scrapt foerderdatenbank.de und schreibt direkt in Supabase.
+FÖRDERLY – Scraper v5.0
+========================
+Erweitert v4.1 um 10 neue Felder, besseres Error-Handling,
+CSV Error-Log und Skip-statt-Abort Logik.
 
-Fixes in v4.1:
-  - Proper connect+read timeouts (10s connect, 25s read)
-  - Verbose logging with sys.stdout.flush() for GitHub Actions
-  - Retry logic (3 attempts per request)
-  - Graceful handling of blocked/hanging requests
-  - Progress output on every page, not just every 20th
+Neue Felder:
+  - antragsfrist (string)
+  - hat_deadline (bool)
+  - rechtsgrundlagen (array)
+  - foerderquote (int 1-100)
+  - bearbeitungszeit (string)
+  - besonderheiten (array)
+  - kontakte (array of objects)
+  - zielgruppen_erweitert (array)
+  - finanzierungsform_erweitert (array)
+  - datenqualitaet ("vollstaendig"|"unvollstaendig"|"minimal")
 
-Strategie:
-  Phase 1: Alle Bundesländer durchgehen, URLs sammeln (mit Deduplizierung)
-  Phase 2: Alle einzigartigen Detail-Seiten abrufen
-  Phase 3: In Supabase upserten
-
-Installation:
-    pip install requests beautifulsoup4 lxml supabase
-
-Verwendung:
-    python scraper.py --test          # Testlauf: 5 Programme
-    python scraper.py                 # Alles scrapen
-    python scraper.py --json-only     # Nur JSON, kein Supabase
-    python scraper.py --fast          # Nur Listendaten, keine Detailseiten
+Strategie: Hybrid CSS + Regex (Option 2)
+Error-Handling: Skip einzelne Programme, nicht abort.
 """
 
 import requests as req
-import json, time, re, os, sys, argparse
+import json, time, re, os, sys, argparse, csv
 from datetime import datetime
 from bs4 import BeautifulSoup
 
 # ─── Config ───
 BASE = "https://www.foerderdatenbank.de"
 SEARCH = "/SiteGlobals/FDB/Forms/Suche/Expertensuche_Formular.html"
-DELAY_LIST = 1.2   # Delay zwischen Listenseiten
-DELAY_DETAIL = 1.5 # Delay zwischen Detailseiten
-MAX_RETRIES = 3    # Retry-Versuche pro Request
-
-# Timeouts: (connect_timeout, read_timeout) in Sekunden
+DELAY_LIST = 1.2
+DELAY_DETAIL = 1.5
+MAX_RETRIES = 3
 TIMEOUT = (10, 25)
 
 HEADERS = {
@@ -85,20 +78,80 @@ ART_MAP = {
     "beteiligung": "beteiligung", "garantie": "buergschaft",
 }
 
+# ─── Erweiterte Branchen-Keywords (50+) ───
 BRANCHE_KW = {
-    "digitalisierung": "digitalisierung", "energieeffizienz": "energie-umwelt",
-    "erneuerbare energien": "energie-umwelt", "forschung": "forschung-entwicklung",
-    "innovation": "forschung-entwicklung", "gesundheit": "gesundheit-medizin",
-    "soziales": "gesundheit-medizin", "handwerk": "handwerk", "handel": "handel",
-    "außenwirtschaft": "handel", "existenzgründung": "branchenuebergreifend",
-    "unternehmensfinanzierung": "branchenuebergreifend", "beratung": "branchenuebergreifend",
-    "aus- & weiterbildung": "bildung", "kultur": "kreativwirtschaft",
-    "landwirtschaft": "landwirtschaft", "mobilität": "mobilitaet-logistik",
+    # Digitalisierung
+    "digitalisierung": "digitalisierung", "digital": "digitalisierung",
+    "smart cities": "digitalisierung", "e-commerce": "digitalisierung",
+    "industrie 4.0": "digitalisierung", "ki": "digitalisierung",
+    "künstliche intelligenz": "digitalisierung", "blockchain": "digitalisierung",
+    # Energie & Umwelt
+    "energieeffizienz": "energie-umwelt", "erneuerbare energien": "energie-umwelt",
     "umwelt": "energie-umwelt", "naturschutz": "energie-umwelt",
-    "wohnungsbau": "bauwesen-immobilien", "smart cities": "digitalisierung",
-    "it": "it-software", "software": "it-software", "digital": "digitalisierung",
-    "technologie": "forschung-entwicklung", "tourismus": "tourismus-gastro",
-    "gastronomie": "tourismus-gastro",
+    "klimaschutz": "energie-umwelt", "nachhaltigkeit": "energie-umwelt",
+    "wasserstoff": "energie-umwelt", "photovoltaik": "energie-umwelt",
+    "windenergie": "energie-umwelt", "bioenergie": "energie-umwelt",
+    "elektromobilität": "energie-umwelt", "co2": "energie-umwelt",
+    # Forschung
+    "forschung": "forschung-entwicklung", "innovation": "forschung-entwicklung",
+    "technologie": "forschung-entwicklung", "f&e": "forschung-entwicklung",
+    "prototyp": "forschung-entwicklung", "patent": "forschung-entwicklung",
+    # Gesundheit
+    "gesundheit": "gesundheit-medizin", "medizin": "gesundheit-medizin",
+    "pflege": "gesundheit-medizin", "pharma": "gesundheit-medizin",
+    "medizintechnik": "gesundheit-medizin", "biotech": "gesundheit-medizin",
+    # Handwerk
+    "handwerk": "handwerk", "meister": "handwerk", "gewerk": "handwerk",
+    # Handel
+    "handel": "handel", "außenwirtschaft": "handel", "export": "handel",
+    "einzelhandel": "handel",
+    # IT
+    "it": "it-software", "software": "it-software", "saas": "it-software",
+    "cloud": "it-software", "cybersecurity": "it-software",
+    "app": "it-software", "plattform": "it-software",
+    # Kreativwirtschaft
+    "kultur": "kreativwirtschaft", "kreativ": "kreativwirtschaft",
+    "design": "kreativwirtschaft", "medien": "kreativwirtschaft",
+    "film": "kreativwirtschaft", "musik": "kreativwirtschaft",
+    # Produktion
+    "produktion": "produktion-industrie", "industrie": "produktion-industrie",
+    "fertigung": "produktion-industrie", "maschinenbau": "produktion-industrie",
+    # Sonstige
+    "existenzgründung": "branchenuebergreifend",
+    "unternehmensfinanzierung": "branchenuebergreifend",
+    "beratung": "branchenuebergreifend",
+    "aus- & weiterbildung": "bildung", "bildung": "bildung",
+    "qualifizierung": "bildung", "ausbildung": "bildung",
+    "landwirtschaft": "landwirtschaft", "agrar": "landwirtschaft",
+    "mobilität": "mobilitaet-logistik", "logistik": "mobilitaet-logistik",
+    "tourismus": "tourismus-gastro", "gastronomie": "tourismus-gastro",
+    "wohnungsbau": "bauwesen-immobilien", "bau": "bauwesen-immobilien",
+    "sozial": "sozialunternehmen", "gemeinnützig": "sozialunternehmen",
+}
+
+# ─── Zielgruppen-Keywords ───
+ZIELGRUPPEN_KW = {
+    "frauen": ["frauen", "gründerinnen", "unternehmerinnen", "weiblich"],
+    "forschung": ["wissenschaft", "hochschule", "universität", "forschung", "akadem"],
+    "kultur": ["kultur", "kreativ", "kunst", "design"],
+    "behinderte": ["behinder", "inklusion", "barrierefreiheit"],
+    "migranten": ["migrant", "migration", "integration", "geflüchtet"],
+    "jugend": ["jugend", "junge", "azubi", "ausbildung"],
+    "senioren": ["senior", "nachfolge", "übernahme", "ruhestand"],
+    "sozial": ["sozial", "gemeinnütz", "wohlfahrt"],
+    "international": ["international", "ausland", "eu-", "europa"],
+    "regional": ["regional", "strukturschwach", "ländlich"],
+}
+
+# ─── Finanzierungsform-Keywords ───
+FINANZIERUNG_KW = {
+    "mezzanine": ["mezzanine", "nachrangdarlehen", "nachrang"],
+    "wandeldarlehen": ["wandeldarlehen", "convertible"],
+    "verbundfinanzierung": ["verbund", "kofinanzierung", "kombinierte"],
+    "buergschaft": ["bürgschaft", "garantie", "haftungsfreistellung"],
+    "eigenkapital": ["eigenkapital", "beteiligung", "equity"],
+    "tilgungszuschuss": ["tilgungszuschuss", "tilgungsfreijahre"],
+    "stille_beteiligung": ["stille beteiligung", "stille gesellschaft"],
 }
 
 BRANCHEN = [
@@ -121,46 +174,80 @@ BRANCHEN = [
 ]
 B_MAP = {b["slug"]: b for b in BRANCHEN}
 
+# ─── Error Tracking ───
+error_log = []
+
 
 def log(msg):
-    """Print with timestamp and immediate flush for GitHub Actions."""
     print(f"  [{datetime.now().strftime('%H:%M:%S')}] {msg}", flush=True)
 
 
+def log_error(url, error_type, message, phase="detail"):
+    """Log error für CSV-Export und optional Supabase."""
+    error_log.append({
+        "timestamp": datetime.now().isoformat(),
+        "url": url,
+        "error_type": error_type,
+        "error_message": str(message)[:500],
+        "phase": phase,
+    })
+    log(f"  ⚠️ [{error_type}] {message}")
+
+
+def export_error_csv(path="data/scraper_errors.csv"):
+    """Exportiert Error-Log als CSV."""
+    if not error_log:
+        return
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["timestamp", "url", "error_type", "error_message", "phase"])
+        writer.writeheader()
+        writer.writerows(error_log)
+    print(f"📋 Error-Log: {len(error_log)} Fehler → {path}", flush=True)
+
+
+def export_errors_supabase(sb):
+    """Schreibt Error-Log in Supabase."""
+    if not error_log or not sb:
+        return
+    try:
+        rows = [{
+            "url": e["url"],
+            "error_type": e["error_type"],
+            "error_message": e["error_message"],
+            "phase": e["phase"],
+        } for e in error_log[:500]]  # Max 500
+        sb.table("scraper_errors").insert(rows).execute()
+        log(f"📋 {len(rows)} Fehler in Supabase geschrieben")
+    except Exception as e:
+        log(f"⚠️ Error-Log Supabase fehlgeschlagen: {e}")
+
+
 def fetch(session, url, params=None, delay=DELAY_LIST, retries=MAX_RETRIES):
-    """Fetch a URL with retry logic and proper timeouts."""
+    """Fetch mit Retry, Timeout, Error-Tracking. Gibt None zurück statt zu crashen."""
     time.sleep(delay)
-    
     for attempt in range(1, retries + 1):
         try:
-            log(f"  GET {url[:80]}{'...' if len(url) > 80 else ''} (Versuch {attempt}/{retries})")
             r = session.get(url, params=params, timeout=TIMEOUT, allow_redirects=True)
-            log(f"  → Status {r.status_code}, {len(r.text)} Bytes")
             r.raise_for_status()
             return BeautifulSoup(r.text, "lxml")
         except req.exceptions.ConnectTimeout:
-            log(f"  ⚠️ Connect-Timeout (Server nicht erreichbar)")
+            log_error(url, "ConnectTimeout", "Server nicht erreichbar", "fetch")
         except req.exceptions.ReadTimeout:
-            log(f"  ⚠️ Read-Timeout (Server antwortet nicht)")
+            log_error(url, "ReadTimeout", "Server antwortet nicht", "fetch")
         except req.exceptions.ConnectionError as e:
-            log(f"  ⚠️ Verbindungsfehler: {e}")
+            log_error(url, "ConnectionError", str(e), "fetch")
         except req.exceptions.HTTPError as e:
-            log(f"  ⚠️ HTTP-Fehler: {e}")
-            if r.status_code == 403:
-                log(f"  🚫 403 Forbidden – möglicherweise IP-Block!")
-                return None
-            if r.status_code == 429:
-                log(f"  🚫 429 Rate Limited – warte 30 Sekunden...")
-                time.sleep(30)
+            log_error(url, "HTTPError", str(e), "fetch")
+            if hasattr(e, 'response') and e.response is not None:
+                if e.response.status_code == 403:
+                    return None
+                if e.response.status_code == 429:
+                    time.sleep(30)
         except Exception as e:
-            log(f"  ❌ Unerwarteter Fehler: {type(e).__name__}: {e}")
-        
+            log_error(url, type(e).__name__, str(e), "fetch")
         if attempt < retries:
-            wait = attempt * 5
-            log(f"  ⏳ Warte {wait}s vor Retry...")
-            time.sleep(wait)
-    
-    log(f"  ❌ Alle {retries} Versuche fehlgeschlagen!")
+            time.sleep(attempt * 5)
     return None
 
 
@@ -169,233 +256,380 @@ def fetch(session, url, params=None, delay=DELAY_LIST, retries=MAX_RETRIES):
 # ═══════════════════════════════════════════
 
 def test_connectivity(session):
-    """Test if foerderdatenbank.de is reachable at all."""
     print("\n🔍 Teste Verbindung zu foerderdatenbank.de...", flush=True)
-    
     try:
         r = session.get(BASE, timeout=TIMEOUT, allow_redirects=True)
-        print(f"  ✅ Erreichbar! Status: {r.status_code}, {len(r.text)} Bytes", flush=True)
-        
-        # Check if we got a real page or a block page
         if r.status_code == 200 and len(r.text) > 1000:
-            print(f"  ✅ Seite sieht normal aus", flush=True)
+            print(f"  ✅ Erreichbar! Status: {r.status_code}", flush=True)
             return True
-        elif r.status_code == 403:
-            print(f"  🚫 403 Forbidden – IP wird geblockt!", flush=True)
-            return False
-        elif r.status_code == 503:
-            print(f"  🚫 503 Service Unavailable – Seite unter Wartung?", flush=True)
-            return False
-        else:
-            print(f"  ⚠️ Unerwarteter Status: {r.status_code}", flush=True)
-            # Print first 500 chars of response for debugging
-            print(f"  Response-Anfang: {r.text[:500]}", flush=True)
-            return r.status_code == 200
-            
-    except req.exceptions.ConnectTimeout:
-        print(f"  ❌ Connect-Timeout – Server nicht erreichbar", flush=True)
-        return False
-    except req.exceptions.ReadTimeout:
-        print(f"  ❌ Read-Timeout – Server antwortet nicht", flush=True)
-        return False
-    except req.exceptions.ConnectionError as e:
-        print(f"  ❌ Verbindungsfehler: {e}", flush=True)
-        return False
+        print(f"  ⚠️ Status: {r.status_code}", flush=True)
+        return r.status_code == 200
     except Exception as e:
-        print(f"  ❌ Fehler: {type(e).__name__}: {e}", flush=True)
+        print(f"  ❌ {type(e).__name__}: {e}", flush=True)
         return False
 
 
 # ═══════════════════════════════════════════
-# PHASE 1: Collect all unique programme URLs
+# PHASE 1: Collect URLs (identisch zu v4.1)
 # ═══════════════════════════════════════════
 
 def collect_all_urls(session):
-    """
-    Scrapt alle Bundesländer und sammelt einzigartige Programme-URLs.
-    Folgt dem Forward-Button für korrekte Paginierung.
-    Stoppt pro Land sobald nur noch Duplikate kommen.
-    """
-    all_programmes = {}  # url → {name, meta, bundeslaender}
-    
+    all_programmes = {}
     for land_key, land_param in BL_PARAMS.items():
         bl = BL_SHORT[land_key]
         new_in_land = 0
         dupes_in_land = 0
         page_num = 0
         consecutive_dupe_pages = 0
-        
+
         print(f"\n📍 {land_key.upper()} ({bl})", flush=True)
-        print("─" * 40, flush=True)
-        
-        # First page URL with params
+
         next_url = BASE + SEARCH
         next_params = {
             "submit": "Suchen",
             "filterCategories": "FundingProgram",
             "cl2Processes_Foerdergebiet": land_param,
         }
-        
+
         while next_url:
             soup = fetch(session, next_url, next_params)
-            next_params = None  # Only use params for first request
-            
+            next_params = None
+
             if not soup:
                 log("Kein Response – überspringe Land")
                 break
-            
+
             cards = soup.select("div.card--fundingprogram")
             if not cards:
-                # Try alternative selectors in case the HTML changed
-                cards = soup.select("div.result-item") or soup.select("article.card") or soup.select("[class*='funding']")
+                cards = soup.select("div.result-item") or soup.select("article.card")
                 if not cards:
-                    log(f"Keine Ergebnisse gefunden. Seite hat {len(soup.text)} Zeichen.")
-                    # Debug: show what CSS classes exist on the page
-                    all_divs = soup.select("div[class]")
-                    classes = set()
-                    for div in all_divs[:50]:
-                        for c in div.get("class", []):
-                            classes.add(c)
-                    if classes:
-                        log(f"Gefundene CSS-Klassen: {', '.join(sorted(list(classes))[:20])}")
                     break
-            
+
             page_num += 1
             page_new = 0
-            
+
             for card in cards:
                 a = card.select_one("p.card--title a[href]")
                 if not a:
-                    # Try alternative selectors
-                    a = card.select_one("a[href*='Foerderprogramm']") or card.select_one("h3 a[href]") or card.select_one("a[href]")
+                    a = card.select_one("a[href*='Foerderprogramm']") or card.select_one("a[href]")
                 if not a:
                     continue
                 href = a.get("href", "")
                 if "/Foerderprogramm/" not in href and "/foerderprogramm/" not in href.lower():
                     continue
-                
+
                 url = href if href.startswith("http") else BASE + "/" + href.lstrip("/")
                 name = a.get_text(strip=True)
-                
+
                 meta = {}
                 for dt in card.select("dt"):
                     dd = dt.find_next_sibling("dd")
                     if dd:
                         meta[dt.get_text(strip=True).rstrip(":")] = dd.get_text(strip=True)
-                
+
                 if url in all_programmes:
                     if bl not in all_programmes[url]["bundeslaender"]:
                         all_programmes[url]["bundeslaender"].append(bl)
                     dupes_in_land += 1
                 else:
-                    all_programmes[url] = {
-                        "name": name,
-                        "meta": meta,
-                        "bundeslaender": [bl],
-                    }
+                    all_programmes[url] = {"name": name, "meta": meta, "bundeslaender": [bl]}
                     new_in_land += 1
                     page_new += 1
-            
-            # Log every page (not just every 20th)
-            log(f"Seite {page_num}: {len(cards)} Cards, {page_new} neu | Land: {new_in_land} neu, {dupes_in_land} dupes | Gesamt: {len(all_programmes)}")
-            
-            # Stop condition: if entire page was duplicates
+
+            log(f"Seite {page_num}: {len(cards)} Cards, {page_new} neu | Gesamt: {len(all_programmes)}")
+
             if page_new == 0:
                 consecutive_dupe_pages += 1
                 if consecutive_dupe_pages >= 3:
-                    log(f"3 Seiten nur Duplikate → nächstes Land")
                     break
             else:
                 consecutive_dupe_pages = 0
-            
-            # Find forward/next button and follow its href
+
             forward = soup.select_one("a.forward.button")
             if not forward:
-                # Try alternative selectors for pagination
-                forward = soup.select_one("a[rel='next']") or soup.select_one("a.pagination-next") or soup.select_one("li.next a")
-            
+                forward = soup.select_one("a[rel='next']")
             if forward and forward.get("href"):
                 fwd_href = forward["href"]
-                if fwd_href.startswith("http"):
-                    next_url = fwd_href
-                else:
-                    next_url = BASE + "/" + fwd_href.lstrip("/")
+                next_url = fwd_href if fwd_href.startswith("http") else BASE + "/" + fwd_href.lstrip("/")
             else:
-                log(f"Letzte Seite erreicht (Seite {page_num}).")
                 break
-        
-        print(f"  ✅ {new_in_land} neue, {dupes_in_land} Duplikate ({page_num} Seiten) | Gesamt: {len(all_programmes)}", flush=True)
-    
+
+        print(f"  ✅ {new_in_land} neue, {dupes_in_land} Duplikate | Gesamt: {len(all_programmes)}", flush=True)
+
     return all_programmes
 
 
 # ═══════════════════════════════════════════
-# PHASE 2: Fetch detail pages
+# PHASE 2: Detail-Parsing v5 (10 neue Felder)
 # ═══════════════════════════════════════════
 
+def extract_antragsfrist(soup, text):
+    """Extrahiert Antragsfrist aus Detail-Seite."""
+    # Suche in <dt>/<dd> Paaren
+    for dt in soup.select("dt"):
+        label = dt.get_text(strip=True).lower()
+        if "frist" in label or "antragstermin" in label or "laufzeit" in label:
+            dd = dt.find_next_sibling("dd")
+            if dd:
+                val = dd.get_text(strip=True)
+                if val:
+                    # Datum im Format DD.MM.YYYY
+                    m = re.search(r'(\d{1,2}\.\d{1,2}\.\d{4})', val)
+                    if m:
+                        return m.group(1)
+                    if any(kw in val.lower() for kw in ["laufend", "fortlaufend", "jederzeit", "keine frist"]):
+                        return "laufend"
+                    return val[:100]
+    # Regex-Fallback im Text
+    m = re.search(r'(?:Antragsfrist|Frist|Stichtag)[:\s]*(\d{1,2}\.\d{1,2}\.\d{4})', text, re.I)
+    if m:
+        return m.group(1)
+    return None
+
+
+def extract_rechtsgrundlagen(soup, text):
+    """Extrahiert Rechtsgrundlagen (max 2)."""
+    result = []
+    for dt in soup.select("dt"):
+        if "rechtsgrundlage" in dt.get_text(strip=True).lower():
+            dd = dt.find_next_sibling("dd")
+            if dd:
+                val = dd.get_text(strip=True)
+                # Aufteilen wenn mehrere durch Komma/Semikolon getrennt
+                parts = re.split(r'[;,]', val)
+                for p in parts[:2]:
+                    cleaned = p.strip()[:200]
+                    if cleaned:
+                        result.append(cleaned)
+    if not result:
+        # Regex-Fallback: suche §-Zeichen
+        matches = re.findall(r'(§\s*\d+[a-zA-Z]?\s*(?:Abs\.\s*\d+)?\s*\w{2,30})', text)
+        result = [m.strip() for m in matches[:2]]
+    return result
+
+
+def extract_foerderquote(text):
+    """Extrahiert Förderquote als int (1-100)."""
+    # "bis zu 80%", "max. 50%", "Zuschuss von 60%"
+    m = re.search(r'(?:bis\s+(?:zu\s+)?|max\.?\s*|Zuschuss\s+(?:von\s+)?)(\d{1,3})\s*%', text, re.I)
+    if m:
+        val = int(m.group(1))
+        if 1 <= val <= 100:
+            return val
+    # "50 Prozent"
+    m = re.search(r'(\d{1,3})\s*Prozent', text, re.I)
+    if m:
+        val = int(m.group(1))
+        if 1 <= val <= 100:
+            return val
+    return None
+
+
+def extract_bearbeitungszeit(soup, text):
+    """Extrahiert geschätzte Bearbeitungszeit."""
+    for dt in soup.select("dt"):
+        if any(kw in dt.get_text(strip=True).lower() for kw in ["bearbeitungszeit", "laufzeit", "bewilligungszeitraum"]):
+            dd = dt.find_next_sibling("dd")
+            if dd:
+                val = dd.get_text(strip=True)
+                if val and len(val) < 100:
+                    return val
+    # Regex: "4-6 Wochen", "ca. 3 Monate"
+    m = re.search(r'(?:Bearbeitungszeit|Bewilligungszeitraum)[:\s]*(.{5,50}?)(?:\.|$)', text, re.I)
+    if m:
+        return m.group(1).strip()
+    return None
+
+
+def extract_besonderheiten(soup, text):
+    """Extrahiert Besonderheiten (max 5)."""
+    result = []
+    # Suche nach "Besonderheiten", "Hinweise", "Wichtig"
+    for heading in soup.find_all(["h3", "h4"]):
+        if any(kw in heading.get_text(strip=True).lower() for kw in ["besonderheit", "hinweis", "voraussetzung", "kombination"]):
+            for sib in heading.find_next_siblings():
+                if sib.name in ("h2", "h3", "h4"):
+                    break
+                if sib.name in ("p", "li"):
+                    t = sib.get_text(strip=True)
+                    if t and len(t) > 10:
+                        result.append(t[:200])
+                if len(result) >= 5:
+                    break
+    # Fallback: Liste im Text
+    if not result:
+        for li in soup.select("ul li"):
+            t = li.get_text(strip=True)
+            if t and len(t) > 15 and any(kw in t.lower() for kw in ["kombin", "kumulier", "de-minimis", "beihilfe", "voraussetzung"]):
+                result.append(t[:200])
+            if len(result) >= 5:
+                break
+    return result[:5]
+
+
+def extract_kontakte(soup):
+    """Extrahiert Kontaktdaten."""
+    kontakte = []
+    # E-Mails
+    for a in soup.select("a[href^='mailto:']"):
+        email = a.get("href", "").replace("mailto:", "").strip()
+        if email and "@" in email:
+            kontakte.append({"typ": "email", "wert": email})
+    # Telefon
+    for a in soup.select("a[href^='tel:']"):
+        tel = a.get("href", "").replace("tel:", "").strip()
+        if tel:
+            kontakte.append({"typ": "telefon", "wert": tel})
+    # Regex-Fallback für Telefon
+    if not any(k["typ"] == "telefon" for k in kontakte):
+        text = soup.get_text()
+        m = re.search(r'(?:Tel\.?|Telefon)[:\s]*([\d\s/\-+()]{8,20})', text)
+        if m:
+            kontakte.append({"typ": "telefon", "wert": m.group(1).strip()})
+    # Weiterführende Links
+    for dt in soup.select("dt"):
+        if "weiterführende" in dt.get_text(strip=True).lower():
+            dd = dt.find_next_sibling("dd")
+            if dd:
+                for lnk in dd.select("a[href]")[:3]:
+                    href = lnk.get("href", "")
+                    if href.startswith("http"):
+                        kontakte.append({"typ": "link", "wert": href})
+    return kontakte[:10]  # Max 10
+
+
+def detect_zielgruppen(text):
+    """Erkennt erweiterte Zielgruppen aus Text."""
+    txt = text.lower()
+    found = set()
+    for gruppe, keywords in ZIELGRUPPEN_KW.items():
+        for kw in keywords:
+            if kw in txt:
+                found.add(gruppe)
+                break
+    return sorted(found)
+
+
+def detect_finanzierungsform(text):
+    """Erkennt erweiterte Finanzierungsformen."""
+    txt = text.lower()
+    found = set()
+    for form, keywords in FINANZIERUNG_KW.items():
+        for kw in keywords:
+            if kw in txt:
+                found.add(form)
+                break
+    return sorted(found)
+
+
+def assess_data_quality(prog):
+    """Bewertet Datenqualität basierend auf Feldvollständigkeit."""
+    score = 0
+    if prog.get("beschreibung") and len(prog["beschreibung"]) > 50:
+        score += 2
+    if prog.get("foerdergeber"):
+        score += 1
+    if prog.get("url_antrag"):
+        score += 1
+    if prog.get("volumen_max_eur", 0) > 0:
+        score += 1
+    if prog.get("foerderquote") is not None:
+        score += 1
+    if prog.get("kontakte"):
+        score += 1
+    if prog.get("antragsfrist"):
+        score += 1
+    if prog.get("rechtsgrundlagen"):
+        score += 1
+    if prog.get("besonderheiten"):
+        score += 1
+
+    if score >= 7:
+        return "vollstaendig"
+    elif score >= 4:
+        return "unvollstaendig"
+    return "minimal"
+
+
 def fetch_details(session, all_programmes, fast_mode=False):
-    """Fetch detail pages for all programmes."""
+    """Phase 2: Detailseiten abrufen mit v5-Feldern."""
     programmes = []
     total = len(all_programmes)
     errors = 0
-    
+
     print(f"\n{'='*60}", flush=True)
-    print(f"PHASE 2: {total} Detailseiten abrufen", flush=True)
-    if fast_mode:
-        print("⚡ FAST MODE: Nur Listendaten, keine Detailseiten", flush=True)
+    print(f"PHASE 2: {total} Detailseiten abrufen (v5)", flush=True)
     print(f"{'='*60}\n", flush=True)
-    
+
     for i, (url, info) in enumerate(all_programmes.items()):
         if (i + 1) % 25 == 0 or i == 0:
             log(f"Fortschritt: {i + 1}/{total} ({errors} Fehler)")
-        
-        if fast_mode:
-            prog = build_programme_from_list(url, info)
-        else:
-            prog = parse_detail(session, url, info)
-        
-        if prog:
-            programmes.append(prog)
-        else:
+
+        try:
+            if fast_mode:
+                prog = build_programme_from_list(url, info)
+            else:
+                prog = parse_detail_v5(session, url, info)
+
+            if prog:
+                programmes.append(prog)
+            else:
+                errors += 1
+                log_error(url, "ParseFailed", "Konnte Programm nicht verarbeiten", "detail")
+        except Exception as e:
+            # SKIP statt ABORT – Kernfeature von v5
             errors += 1
-    
-    print(f"\n  ✅ {len(programmes)} Programme verarbeitet, {errors} Fehler", flush=True)
+            log_error(url, type(e).__name__, str(e), "detail")
+            # Fallback: Listendaten verwenden
+            try:
+                prog = build_programme_from_list(url, info)
+                if prog:
+                    programmes.append(prog)
+                    log(f"  ↪ Fallback auf Listendaten für: {info['name'][:50]}")
+            except Exception:
+                pass
+
+    print(f"\n  ✅ {len(programmes)} Programme, {errors} Fehler", flush=True)
     return programmes
 
 
 def build_programme_from_list(url, info):
-    """Build a programme entry from list-only data (fast mode)."""
+    """Programm aus Listendaten (Fast Mode / Fallback)."""
     meta = info["meta"]
     name = info["name"]
-    
+
     beschreibung_parts = []
     if meta.get("Was wird gefördert?"):
         beschreibung_parts.append(meta["Was wird gefördert?"])
     if meta.get("Wer wird gefördert?"):
         beschreibung_parts.append(meta["Wer wird gefördert?"])
     beschreibung = " | ".join(beschreibung_parts) if beschreibung_parts else None
-    
+
     foerderart = "zuschuss"
     art_text = (meta.get("Förderart", "") + " " + (beschreibung or "")).lower()
     for k, v in ART_MAP.items():
         if k in art_text:
             foerderart = v
             break
-    
+
+    raw_text = (beschreibung or "") + " " + name
+
     return build_final_programme(
         name=name, url_quelle=url, beschreibung=beschreibung,
         foerdergeber=meta.get("Fördergeber"), foerderart=foerderart,
-        bundeslaender=info["bundeslaender"],
-        raw_text=(beschreibung or "") + " " + name,
+        bundeslaender=info["bundeslaender"], raw_text=raw_text,
+        # v5 Felder: minimal bei Listendaten
+        antragsfrist=None, rechtsgrundlagen=[], foerderquote=None,
+        bearbeitungszeit=None, besonderheiten=[], kontakte=[],
     )
 
 
-def parse_detail(session, url, info):
-    """Parse a detail page for full programme information."""
+def parse_detail_v5(session, url, info):
+    """Parse Detail-Seite mit v5 Feldern."""
     soup = fetch(session, url, delay=DELAY_DETAIL)
     if not soup:
         return build_programme_from_list(url, info)
-    
+
     prog = {
         "url_quelle": url,
         "name": info["name"],
@@ -408,18 +642,18 @@ def parse_detail(session, url, info):
         "volumen_max_eur": 0,
         "eigenanteil_prozent": 0,
     }
-    
+
     foerdergebiet = None
     foerderberechtigte = None
     foerderbereich = None
-    
+
     for dt in soup.select("dt"):
         dd = dt.find_next_sibling("dd")
         if not dd:
             continue
         label = dt.get_text(strip=True).rstrip(":").lower()
         value = dd.get_text(strip=True)
-        
+
         if "förderart" in label:
             for k, v in ART_MAP.items():
                 if k in value.lower():
@@ -443,7 +677,8 @@ def parse_detail(session, url, info):
                     if h.startswith("http"):
                         prog["url_antrag"] = h
                         break
-    
+
+    # Beschreibung
     for tag_text in ["Kurztext", "Volltext"]:
         h3 = soup.find("h3", string=re.compile(tag_text, re.I))
         if h3:
@@ -455,12 +690,12 @@ def parse_detail(session, url, info):
                     t = sib.get_text(strip=True)
                     if t:
                         parts.append(t)
-                if len(parts) >= 4:
+                if len(parts) >= 6:
                     break
             if parts:
-                prog["beschreibung"] = " ".join(parts)[:600]
+                prog["beschreibung"] = " ".join(parts)[:800]
                 break
-    
+
     if not prog["beschreibung"]:
         meta = info["meta"]
         bits = []
@@ -469,28 +704,33 @@ def parse_detail(session, url, info):
         if meta.get("Wer wird gefördert?"):
             bits.append(meta["Wer wird gefördert?"])
         prog["beschreibung"] = " | ".join(bits) if bits else None
-    
+
+    # Eigenanteil
     ea_match = re.search(r'(\d{1,3})\s*%\s*(?:Eigen|eigen)', prog["beschreibung"] or "", re.I)
     if ea_match:
         prog["eigenanteil_prozent"] = int(ea_match.group(1))
-    
+
+    # Bundesländer
     bundeslaender = list(info["bundeslaender"])
     if foerdergebiet and "bundesweit" in foerdergebiet.lower():
         if "BUND" not in bundeslaender:
             bundeslaender.append("BUND")
-    
-    raw_text = " ".join(filter(None, [
-        foerderberechtigte, foerderbereich, prog["beschreibung"], prog["name"]
+
+    # Volltext für Keyword-Extraktion
+    full_text = " ".join(filter(None, [
+        foerderberechtigte, foerderbereich, prog["beschreibung"],
+        prog["name"], soup.get_text()[:2000],
     ]))
-    
-    result = build_final_programme(
-        name=prog["name"], kurzname=prog["kurzname"],
-        url_quelle=prog["url_quelle"], url_antrag=prog["url_antrag"],
-        beschreibung=prog["beschreibung"], foerdergeber=prog["foerdergeber"],
-        foerderart=prog["foerderart"], eigenanteil_prozent=prog["eigenanteil_prozent"],
-        bundeslaender=bundeslaender, raw_text=raw_text,
-    )
-    
+
+    # ═══ v5: Neue Felder extrahieren ═══
+    antragsfrist = extract_antragsfrist(soup, full_text)
+    rechtsgrundlagen = extract_rechtsgrundlagen(soup, full_text)
+    foerderquote = extract_foerderquote(full_text)
+    bearbeitungszeit = extract_bearbeitungszeit(soup, full_text)
+    besonderheiten = extract_besonderheiten(soup, full_text)
+    kontakte = extract_kontakte(soup)
+
+    # Beträge
     amounts = []
     for m in re.finditer(r'([\d.]+)\s*(?:EUR|Euro|€)', prog["beschreibung"] or "", re.I):
         try:
@@ -499,19 +739,35 @@ def parse_detail(session, url, info):
                 amounts.append(v)
         except ValueError:
             pass
+
+    result = build_final_programme(
+        name=prog["name"], kurzname=prog["kurzname"],
+        url_quelle=prog["url_quelle"], url_antrag=prog["url_antrag"],
+        beschreibung=prog["beschreibung"], foerdergeber=prog["foerdergeber"],
+        foerderart=prog["foerderart"], eigenanteil_prozent=prog["eigenanteil_prozent"],
+        bundeslaender=bundeslaender, raw_text=full_text,
+        antragsfrist=antragsfrist, rechtsgrundlagen=rechtsgrundlagen,
+        foerderquote=foerderquote, bearbeitungszeit=bearbeitungszeit,
+        besonderheiten=besonderheiten, kontakte=kontakte,
+    )
+
     if amounts:
         result["volumen_max_eur"] = max(amounts)
         result["volumen_min_eur"] = min(amounts) if len(amounts) > 1 else 0
-    
+
     return result
 
 
 def build_final_programme(name, url_quelle, beschreibung, foerdergeber,
                           foerderart, bundeslaender, raw_text,
-                          kurzname=None, url_antrag=None, eigenanteil_prozent=0):
-    """Build the final programme dict with derived fields."""
+                          kurzname=None, url_antrag=None, eigenanteil_prozent=0,
+                          antragsfrist=None, rechtsgrundlagen=None,
+                          foerderquote=None, bearbeitungszeit=None,
+                          besonderheiten=None, kontakte=None):
+    """Baut finales Programm-Dict mit v5 Feldern."""
     txt = raw_text.lower()
-    
+
+    # Phasen
     phasen = set()
     if any(k in txt for k in ["existenzgründ", "gründer", "gründung", "startup", "start-up"]):
         phasen.update(["ideation", "gruendung"])
@@ -523,7 +779,8 @@ def build_final_programme(name, url_quelle, beschreibung, foerdergeber,
         phasen.update(["wachstum", "etabliert"])
     if not phasen:
         phasen = {"fruehphase", "wachstum"}
-    
+
+    # Größen
     groessen = set()
     if any(k in txt for k in ["existenzgründ", "gründer", "freiberuf", "solo", "einzelunternehm"]):
         groessen.add("solo")
@@ -535,16 +792,17 @@ def build_final_programme(name, url_quelle, beschreibung, foerdergeber,
         groessen.add("mittel")
     if not groessen:
         groessen = {"mikro", "klein", "mittel"}
-    
+
+    # Branchen (erweitert mit 50+ Keywords)
     slugs = set()
     for kw, slug in BRANCHE_KW.items():
         if kw in txt:
             slugs.add(slug)
     if not slugs:
         slugs.add("branchenuebergreifend")
-    
-    vmax = 0
-    vmin = 0
+
+    # Beträge
+    vmax, vmin = 0, 0
     amounts = []
     for m in re.finditer(r'([\d.]+)\s*(?:EUR|Euro|€)', beschreibung or "", re.I):
         try:
@@ -556,8 +814,13 @@ def build_final_programme(name, url_quelle, beschreibung, foerdergeber,
     if amounts:
         vmax = max(amounts)
         vmin = min(amounts) if len(amounts) > 1 else 0
-    
-    return {
+
+    # v5 Felder
+    hat_deadline = antragsfrist is not None and antragsfrist != "laufend"
+    zielgruppen = detect_zielgruppen(txt)
+    finanzierungsform = detect_finanzierungsform(txt)
+
+    prog = {
         "name": name,
         "kurzname": kurzname,
         "beschreibung": beschreibung,
@@ -574,10 +837,23 @@ def build_final_programme(name, url_quelle, beschreibung, foerdergeber,
         "groessen": sorted(groessen),
         "branchen": [B_MAP[s] for s in sorted(slugs) if s in B_MAP],
         "status": "aktiv",
-        "antragsfrist": None,
+        "antragsfrist": antragsfrist,
+        "hat_deadline": hat_deadline,
+        "rechtsgrundlagen": rechtsgrundlagen or [],
+        "foerderquote": foerderquote,
+        "bearbeitungszeit": bearbeitungszeit,
+        "besonderheiten": besonderheiten or [],
+        "kontakte": kontakte or [],
+        "zielgruppen_erweitert": zielgruppen,
+        "finanzierungsform_erweitert": finanzierungsform,
         "aktualisiert_am": datetime.now().strftime("%Y-%m-%d"),
         "aktiv": True,
     }
+
+    # Datenqualität bewerten
+    prog["datenqualitaet"] = assess_data_quality(prog)
+
+    return prog
 
 
 # ═══════════════════════════════════════════
@@ -595,7 +871,7 @@ def export_to_supabase(programmes):
     sb = create_client(url, key)
     today = datetime.now().strftime("%Y-%m-%d")
 
-    print(f"\n📤 Schreibe {len(programmes)} Programme in Supabase...", flush=True)
+    print(f"\n📤 Schreibe {len(programmes)} Programme in Supabase (v5)...", flush=True)
 
     BATCH = 50
     upserted = 0
@@ -614,6 +890,15 @@ def export_to_supabase(programmes):
             "eigenanteil_prozent": p.get("eigenanteil_prozent", 0),
             "status": "aktiv",
             "antragsfrist": p.get("antragsfrist"),
+            "hat_deadline": p.get("hat_deadline", False),
+            "rechtsgrundlagen": p.get("rechtsgrundlagen", []),
+            "foerderquote": p.get("foerderquote"),
+            "bearbeitungszeit": p.get("bearbeitungszeit"),
+            "besonderheiten": p.get("besonderheiten", []),
+            "kontakte": p.get("kontakte", []),
+            "zielgruppen_erweitert": p.get("zielgruppen_erweitert", []),
+            "finanzierungsform_erweitert": p.get("finanzierungsform_erweitert", []),
+            "datenqualitaet": p.get("datenqualitaet", "minimal"),
             "url_antrag": p.get("url_antrag"),
             "url_quelle": p["url_quelle"],
             "quelle": "foerderdatenbank",
@@ -632,9 +917,15 @@ def export_to_supabase(programmes):
         except Exception as e:
             print(f"\n  ❌ Batch-Fehler: {e}", flush=True)
             errors += len(batch)
+            # Einzeln versuchen bei Batch-Fehler
+            for row in batch:
+                try:
+                    sb.table("programme").upsert([row], on_conflict="url_quelle").execute()
+                    upserted += 1
+                except Exception as e2:
+                    log_error(row["url_quelle"], "UpsertFailed", str(e2), "upsert")
 
-    # Deactivate stale programmes
-    print(f"\n🔄 Markiere veraltete Programme als inaktiv...", flush=True)
+    # Veraltete Programme deaktivieren
     try:
         scraped_urls = {p["url_quelle"] for p in programmes}
         existing = sb.table("programme").select("id, url_quelle").eq("quelle", "foerderdatenbank").eq("aktiv", True).execute()
@@ -643,14 +934,13 @@ def export_to_supabase(programmes):
             for i in range(0, len(stale_ids), 100):
                 sb.table("programme").update({"aktiv": False}).in_("id", stale_ids[i:i+100]).execute()
             print(f"  📴 {len(stale_ids)} Programme deaktiviert", flush=True)
-        else:
-            print(f"  ✅ Keine veralteten Programme", flush=True)
     except Exception as e:
-        print(f"  ⚠️ Fehler: {e}", flush=True)
+        log_error("", "StaleCheck", str(e), "upsert")
 
-    print(f"\n{'='*60}", flush=True)
-    print(f"  ✅ Supabase: {upserted} upserted, {errors} Fehler", flush=True)
-    print(f"{'='*60}\n", flush=True)
+    # Error-Log in Supabase
+    export_errors_supabase(sb)
+
+    print(f"\n  ✅ Supabase: {upserted} upserted, {errors} Fehler", flush=True)
     return errors == 0
 
 
@@ -669,12 +959,11 @@ def export_to_json(programmes, path="data/foerderprogramme.json"):
 # ═══════════════════════════════════════════
 
 def main():
-    ap = argparse.ArgumentParser(description="Förderly Scraper v4.1")
-    ap.add_argument("--test", action="store_true", help="Testlauf: Bayern, 5 Programme")
-    ap.add_argument("--fast", action="store_true", help="Nur Listendaten, keine Detailseiten")
-    ap.add_argument("--json-only", action="store_true", help="Nur JSON, kein Supabase")
+    ap = argparse.ArgumentParser(description="Förderly Scraper v5.0")
+    ap.add_argument("--test", action="store_true", help="Testlauf: 5 Programme")
+    ap.add_argument("--fast", action="store_true", help="Nur Listendaten")
+    ap.add_argument("--json-only", action="store_true", help="Nur JSON")
     ap.add_argument("--json-backup", action="store_true", help="Zusätzlich JSON-Backup")
-    ap.add_argument("--alle", action="store_true", help="Alle Länder (default)")
     ap.add_argument("--output", default="data/foerderprogramme.json")
     args = ap.parse_args()
 
@@ -682,43 +971,37 @@ def main():
     session.headers.update(HEADERS)
 
     print(f"\n{'='*60}", flush=True)
-    print(f"  FÖRDERLY SCRAPER v4.1", flush=True)
-    print(f"  Zeitpunkt: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", flush=True)
+    print(f"  FÖRDERLY SCRAPER v5.0", flush=True)
+    print(f"  {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", flush=True)
     print(f"{'='*60}\n", flush=True)
 
-    # CONNECTIVITY TEST
     if not test_connectivity(session):
-        print("\n❌ foerderdatenbank.de ist nicht erreichbar!", flush=True)
-        print("   Mögliche Ursachen:", flush=True)
-        print("   - GitHub Actions IP wird geblockt", flush=True)
-        print("   - Seite ist offline / unter Wartung", flush=True)
-        print("   - DNS-Problem", flush=True)
-        print("\n   Fallback: Behalte bestehende Daten bei.", flush=True)
+        print("\n❌ foerderdatenbank.de nicht erreichbar!", flush=True)
+        export_error_csv()
         sys.exit(1)
 
-    # PHASE 1: Collect URLs
-    print("\n═══ PHASE 1: Programme-URLs sammeln ═══\n", flush=True)
+    # PHASE 1
+    print("\n═══ PHASE 1: URLs sammeln ═══\n", flush=True)
     all_programmes = collect_all_urls(session)
-    print(f"\n📊 {len(all_programmes)} einzigartige Programme gefunden\n", flush=True)
+    print(f"\n📊 {len(all_programmes)} einzigartige Programme\n", flush=True)
 
     if args.test:
-        items = dict(list(all_programmes.items())[:5])
-        all_programmes = items
+        all_programmes = dict(list(all_programmes.items())[:5])
 
     if not all_programmes:
         print("⚠️ Keine Programme gefunden!", flush=True)
-        print("   Die HTML-Struktur von foerderdatenbank.de hat sich möglicherweise geändert.", flush=True)
+        export_error_csv()
         sys.exit(1)
 
-    # PHASE 2: Fetch details
-    print("═══ PHASE 2: Details abrufen ═══\n", flush=True)
+    # PHASE 2
     programmes = fetch_details(session, all_programmes, fast_mode=args.fast)
 
     if not programmes:
         print("⚠️ Keine Programme verarbeitet!", flush=True)
+        export_error_csv()
         sys.exit(1)
 
-    # PHASE 3: Export
+    # PHASE 3
     print(f"\n═══ PHASE 3: Export ({len(programmes)} Programme) ═══\n", flush=True)
     if args.json_only:
         export_to_json(programmes, args.output)
@@ -727,7 +1010,24 @@ def main():
         if args.json_backup or not success:
             export_to_json(programmes, args.output)
 
-    print("🎉 Fertig!", flush=True)
+    # Error-Log immer exportieren
+    export_error_csv()
+
+    # Stats
+    quality_stats = {"vollstaendig": 0, "unvollstaendig": 0, "minimal": 0}
+    for p in programmes:
+        q = p.get("datenqualitaet", "minimal")
+        quality_stats[q] = quality_stats.get(q, 0) + 1
+
+    deadline_count = sum(1 for p in programmes if p.get("hat_deadline"))
+
+    print(f"\n📊 Datenqualität:", flush=True)
+    print(f"   Vollständig: {quality_stats['vollstaendig']}", flush=True)
+    print(f"   Unvollständig: {quality_stats['unvollstaendig']}", flush=True)
+    print(f"   Minimal: {quality_stats['minimal']}", flush=True)
+    print(f"   Mit Deadline: {deadline_count}", flush=True)
+    print(f"   Fehler gesamt: {len(error_log)}", flush=True)
+    print(f"\n🎉 Fertig!", flush=True)
 
 
 if __name__ == "__main__":

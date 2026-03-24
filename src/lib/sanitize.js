@@ -1,6 +1,6 @@
 /**
- * SICHERHEIT: Input-Validierung & Sanitierung
- * Whitelist-Ansatz für alle Filter-Parameter.
+ * SICHERHEIT: Input-Validierung & Sanitierung v2
+ * Erweitert um v5 Filter-Params.
  */
 
 const VALID_BUNDESLAENDER = [
@@ -16,10 +16,7 @@ const VALID_GROESSEN = [
   'solo', 'mikro', 'klein', 'mittel',
 ];
 
-// Branche-Slugs: nur Kleinbuchstaben, Ziffern und Bindestriche
 const BRANCHE_REGEX = /^[a-z0-9-]{1,50}$/;
-
-// Suchbegriff: alphanumerisch + deutsche Umlaute + Leerzeichen + Bindestriche
 const SEARCH_REGEX = /[^\w\süöäÜÖÄß\-.,]/g;
 const MAX_SEARCH_LENGTH = 100;
 
@@ -29,11 +26,8 @@ const VALID_FOERDERARTEN = [
 
 const VALID_SORT_FIELDS = ['volumen', 'name', 'aktualisiert'];
 const VALID_SORT_DIRS = ['asc', 'desc'];
+const VALID_DATENQUALITAET = ['vollstaendig', 'unvollstaendig', 'minimal'];
 
-/**
- * Validiert und sanitiert alle Filter-Parameter aus der URL.
- * Gibt nur sichere, geprüfte Werte zurück.
- */
 export function sanitizeFilters(searchParams) {
   const raw = {
     bundesland: searchParams.get('bundesland') || '',
@@ -46,6 +40,11 @@ export function sanitizeFilters(searchParams) {
     page: searchParams.get('page') || '1',
     sortBy: searchParams.get('sortBy') || '',
     sortDir: searchParams.get('sortDir') || '',
+    // v5 Filter
+    minVolumen: searchParams.get('minVolumen') || '',
+    maxVolumen: searchParams.get('maxVolumen') || '',
+    hatDeadline: searchParams.get('hatDeadline') || '',
+    datenqualitaet: searchParams.get('datenqualitaet') || '',
   };
 
   return {
@@ -59,15 +58,17 @@ export function sanitizeFilters(searchParams) {
     page: sanitizePage(raw.page),
     sortBy: VALID_SORT_FIELDS.includes(raw.sortBy) ? raw.sortBy : undefined,
     sortDir: VALID_SORT_DIRS.includes(raw.sortDir) ? raw.sortDir : undefined,
+    // v5 Filter
+    minVolumen: sanitizeNumber(raw.minVolumen),
+    maxVolumen: sanitizeNumber(raw.maxVolumen),
+    hatDeadline: raw.hatDeadline === 'true' ? 'true' : undefined,
+    datenqualitaet: VALID_DATENQUALITAET.includes(raw.datenqualitaet) ? raw.datenqualitaet : undefined,
   };
 }
 
 function sanitizeSearchTerm(input) {
   if (!input || typeof input !== 'string') return undefined;
-  const cleaned = input
-    .slice(0, MAX_SEARCH_LENGTH)
-    .replace(SEARCH_REGEX, '')
-    .trim();
+  const cleaned = input.slice(0, MAX_SEARCH_LENGTH).replace(SEARCH_REGEX, '').trim();
   return cleaned || undefined;
 }
 
@@ -81,4 +82,11 @@ function sanitizePage(input) {
   const num = parseInt(input, 10);
   if (isNaN(num)) return 1;
   return Math.max(num, 1);
+}
+
+function sanitizeNumber(input) {
+  if (!input) return undefined;
+  const num = parseInt(input, 10);
+  if (isNaN(num) || num < 0) return undefined;
+  return String(num);
 }

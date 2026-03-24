@@ -43,6 +43,33 @@ export const FOERDERARTEN = {
   steuerlich: { label: 'Steuerlich', color: '#4f46e5', emoji: '📋' },
 };
 
+// v5: Datenqualität Labels
+export const DATENQUALITAET = {
+  vollstaendig: { label: 'Vollständig', icon: '✓' },
+  unvollstaendig: { label: 'Teilweise', icon: '◐' },
+  minimal: { label: 'Minimal', icon: '○' },
+};
+
+// v5: Branchen für Filter (erweitert)
+export const BRANCHEN_OPTIONS = [
+  { slug: '', label: 'Alle Branchen' },
+  { slug: 'digitalisierung', label: 'Digitalisierung' },
+  { slug: 'energie-umwelt', label: 'Energie & Umwelt' },
+  { slug: 'forschung-entwicklung', label: 'Forschung & Entwicklung' },
+  { slug: 'gesundheit-medizin', label: 'Gesundheit & Medizin' },
+  { slug: 'handwerk', label: 'Handwerk' },
+  { slug: 'handel', label: 'Handel' },
+  { slug: 'it-software', label: 'IT & Software' },
+  { slug: 'kreativwirtschaft', label: 'Kreativwirtschaft' },
+  { slug: 'landwirtschaft', label: 'Landwirtschaft' },
+  { slug: 'mobilitaet-logistik', label: 'Mobilität & Logistik' },
+  { slug: 'produktion-industrie', label: 'Produktion & Industrie' },
+  { slug: 'sozialunternehmen', label: 'Sozialunternehmen' },
+  { slug: 'tourismus-gastro', label: 'Tourismus & Gastro' },
+  { slug: 'bildung', label: 'Bildung' },
+  { slug: 'bauwesen-immobilien', label: 'Bauwesen & Immobilien' },
+];
+
 export function formatEuro(amount) {
   if (!amount) return '–';
   return new Intl.NumberFormat('de-DE', {
