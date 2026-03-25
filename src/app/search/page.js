@@ -201,7 +201,7 @@ function SearchResultCard({ programme, index }) {
         )}
 
         <div className="flex flex-wrap items-center gap-1.5">
-          {programme.bundeslaender?.slice(0, 3).map(bl => (
+          {(programme.bundeslaender || []).slice(0, 3).map(bl => (
             <span key={bl} className="text-[11px] px-2 py-0.5 rounded-md font-medium" style={{ background: 'var(--violet-muted)', color: 'var(--violet-accent)' }}>
               {bl === 'BUND' ? 'Bundesweit' : (BUNDESLAENDER[bl] || bl)}
             </span>

@@ -40,30 +40,37 @@ export default function AdvancedFilters({ currentFilters }) {
   return (
     <div className="space-y-3">
       <form onSubmit={handleSearch}
-        className="flex gap-3 rounded-2xl p-4"
+        className="rounded-2xl p-4"
         style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)' }}
       >
-        <input
-          type="text"
-          value={localQ}
-          onChange={(e) => setLocalQ(e.target.value)}
-          placeholder="Förderprogramm suchen..."
-          className="flex-1 px-4 py-2.5 text-sm rounded-xl cursor-text"
-          style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', color: 'var(--text-primary)' }}
-        />
-        <button
-          type="submit"
-          className="px-6 py-2.5 font-medium text-sm rounded-xl transition-all shrink-0 cursor-pointer"
-          style={{ background: 'linear-gradient(135deg, var(--accent-start), var(--accent-end))', color: '#0f0f13' }}
-        >
-          Suchen
-        </button>
+        {/* Zeile 1: Suchfeld + Suchen-Button */}
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={localQ}
+            onChange={(e) => setLocalQ(e.target.value)}
+            placeholder="Förderprogramm suchen..."
+            className="flex-1 min-w-0 px-3 sm:px-4 py-2.5 text-sm rounded-xl cursor-text"
+            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', color: 'var(--text-primary)' }}
+          />
+          <button
+            type="submit"
+            className="px-4 sm:px-6 py-2.5 font-medium text-sm rounded-xl transition-all shrink-0 cursor-pointer"
+            style={{ background: 'linear-gradient(135deg, var(--accent-start), var(--accent-end))', color: '#0f0f13' }}
+          >
+            Suchen
+          </button>
+        </div>
+        {/* Zeile 2: Filter-Button (full-width auf Mobile) */}
         <button
           type="button"
           onClick={() => setShowAdvanced(!showAdvanced)}
-          className="px-3 py-2.5 text-sm rounded-xl transition-all shrink-0 cursor-pointer"
+          className="mt-2 w-full sm:w-auto px-3 py-2 text-sm rounded-xl transition-all cursor-pointer"
           style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', color: 'var(--text-secondary)' }}
         >
+          <svg className="w-4 h-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+          </svg>
           Filter {activeCount > 0 ? `(${activeCount})` : ''}
           <svg
             className={`w-4 h-4 inline ml-1 transition-transform ${showAdvanced ? 'rotate-180' : ''}`}

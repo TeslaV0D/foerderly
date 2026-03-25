@@ -176,7 +176,7 @@ export default function FilterSidebar({ filters, onChange, onSearch, loading }) 
               onChange={(e) => handleChange('q', e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && onSearch()}
               placeholder="Förderprogramm suchen..."
-              className="flex-1 px-4 py-2.5 text-sm rounded-xl cursor-text"
+              className="flex-1 min-w-0 px-3 py-2.5 text-sm rounded-xl cursor-text"
               style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', color: 'var(--text-primary)' }}
             />
             <button

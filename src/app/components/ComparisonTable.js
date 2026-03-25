@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { BUNDESLAENDER, PHASEN, GROESSEN, FOERDERARTEN, formatEuro } from '@/lib/constants';
-import DataQualityBadge from './DataQualityBadge';
 import DeadlineIndicator from './DeadlineIndicator';
 
 /**
@@ -29,7 +28,6 @@ export default function ComparisonTable({ programmes }) {
     { label: 'Größen', render: (p) => (p.groessen || []).map(gr => GROESSEN[gr] || gr).join(', ') || '–' },
     { label: 'Branchen', render: (p) => (p.branchen || []).map(b => b.name).join(', ') || '–' },
     { label: 'Zielgruppen', render: (p) => (p.zielgruppen_erweitert || []).join(', ') || '–' },
-    { label: 'Datenqualität', render: (p) => p.datenqualitaet || 'minimal', isComponent: true },
   ];
 
   return (
@@ -69,9 +67,7 @@ export default function ComparisonTable({ programmes }) {
               </td>
               {programmes.map(prog => (
                 <td key={prog.id} className="p-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  {row.label === 'Datenqualität' ? (
-                    <DataQualityBadge quality={prog.datenqualitaet} />
-                  ) : row.label === 'Antragsfrist' ? (
+                  {row.label === 'Antragsfrist' ? (
                     <DeadlineIndicator antragsfrist={prog.antragsfrist} hatDeadline={prog.hat_deadline} />
                   ) : (
                     row.render(prog)

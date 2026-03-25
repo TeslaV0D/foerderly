@@ -29,14 +29,19 @@ export default function ShareButtons({ url, title }) {
   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`${title}\n${url}`)}`;
   const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
 
+  const btnStyle = {
+    background: 'var(--bg-elevated)',
+    border: '1px solid var(--border-default)',
+  };
+
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5">
       <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Teilen:</span>
 
       <button
         onClick={copyLink}
-        className="p-1.5 rounded-lg transition-all"
-        style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)' }}
+        className="w-8 h-8 flex items-center justify-center rounded-lg transition-all cursor-pointer"
+        style={btnStyle}
         title="Link kopieren"
       >
         {copied ? (
@@ -54,8 +59,8 @@ export default function ShareButtons({ url, title }) {
         href={whatsappUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="p-1.5 rounded-lg transition-all"
-        style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)' }}
+        className="w-8 h-8 flex items-center justify-center rounded-lg transition-all"
+        style={btnStyle}
         title="Via WhatsApp teilen"
       >
         <svg className="w-3.5 h-3.5" style={{ color: 'var(--text-muted)' }} viewBox="0 0 24 24" fill="currentColor">
@@ -67,8 +72,8 @@ export default function ShareButtons({ url, title }) {
         href={linkedinUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="p-1.5 rounded-lg transition-all"
-        style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)' }}
+        className="w-8 h-8 flex items-center justify-center rounded-lg transition-all"
+        style={btnStyle}
         title="Auf LinkedIn teilen"
       >
         <svg className="w-3.5 h-3.5" style={{ color: 'var(--text-muted)' }} viewBox="0 0 24 24" fill="currentColor">

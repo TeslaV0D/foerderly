@@ -154,26 +154,18 @@ export default async function ProgrammeDetailPage({ params }) {
 
             {/* 4. Tags – Bundesländer, Phasen, Größen, Branchen – NACH OBEN */}
             <section className="space-y-4">
-              {programme.bundeslaender?.length > 0 && (
-                <TagGroup title="Fördergebiet"
-                  items={programme.bundeslaender.map(bl => bl === 'BUND' ? 'Bundesweit' : (BUNDESLAENDER[bl] || bl))}
-                  colorStyle={{ background: 'var(--violet-muted)', color: 'var(--violet-accent)' }} />
-              )}
-              {programme.phasen?.length > 0 && (
-                <TagGroup title="Geeignete Phasen"
-                  items={programme.phasen.map(ph => PHASEN[ph] || ph)}
-                  colorStyle={{ background: 'rgba(251,191,36,0.1)', color: '#fbbf24' }} />
-              )}
-              {programme.groessen?.length > 0 && (
-                <TagGroup title="Unternehmensgrößen"
-                  items={programme.groessen.map(gr => GROESSEN[gr] || gr)}
-                  colorStyle={{ background: 'rgba(244,114,182,0.1)', color: '#f472b6' }} />
-              )}
-              {programme.branchen?.length > 0 && (
-                <TagGroup title="Branchen"
-                  items={programme.branchen.map(br => br.name)}
-                  colorStyle={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)' }} />
-              )}
+              <TagGroup title="Fördergebiet"
+                items={(programme.bundeslaender || []).map(bl => bl === 'BUND' ? 'Bundesweit' : (BUNDESLAENDER[bl] || bl))}
+                colorStyle={{ background: 'var(--violet-muted)', color: 'var(--violet-accent)' }} />
+              <TagGroup title="Geeignete Phasen"
+                items={(programme.phasen || []).map(ph => PHASEN[ph] || ph)}
+                colorStyle={{ background: 'rgba(251,191,36,0.1)', color: '#fbbf24' }} />
+              <TagGroup title="Unternehmensgrößen"
+                items={(programme.groessen || []).map(gr => GROESSEN[gr] || gr)}
+                colorStyle={{ background: 'rgba(244,114,182,0.1)', color: '#f472b6' }} />
+              <TagGroup title="Branchen"
+                items={(programme.branchen || []).map(br => br.name)}
+                colorStyle={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)' }} />
             </section>
 
             {/* 5. Beschreibung – NACH UNTEN (Fix 11) */}
@@ -187,11 +179,11 @@ export default async function ProgrammeDetailPage({ params }) {
             )}
 
             {/* 6. Besonderheiten */}
-            {programme.besonderheiten?.length > 0 && (
+            {(programme.besonderheiten || []).length > 0 && (
               <section>
                 <h2 className="text-lg font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Besonderheiten & Hinweise</h2>
                 <div className="space-y-2">
-                  {programme.besonderheiten.map((item, i) => (
+                  {(programme.besonderheiten || []).map((item, i) => (
                     <div key={i} className="flex gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
                       <span style={{ color: 'var(--accent-text)' }}>•</span>
                       <span>{item}</span>
@@ -202,11 +194,11 @@ export default async function ProgrammeDetailPage({ params }) {
             )}
 
             {/* Rechtsgrundlagen */}
-            {programme.rechtsgrundlagen?.length > 0 && (
+            {(programme.rechtsgrundlagen || []).length > 0 && (
               <section>
                 <h2 className="text-lg font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Rechtsgrundlagen</h2>
                 <div className="space-y-1">
-                  {programme.rechtsgrundlagen.map((rg, i) => (
+                  {(programme.rechtsgrundlagen || []).map((rg, i) => (
                     <p key={i} className="text-sm" style={{ color: 'var(--text-secondary)' }}>{rg}</p>
                   ))}
                 </div>
@@ -214,16 +206,12 @@ export default async function ProgrammeDetailPage({ params }) {
             )}
 
             {/* Zielgruppen + Finanzierungsform */}
-            {programme.zielgruppen_erweitert?.length > 0 && (
-              <TagGroup title="Zielgruppen"
-                items={programme.zielgruppen_erweitert}
-                colorStyle={{ background: 'rgba(96,165,250,0.1)', color: '#93c5fd' }} />
-            )}
-            {programme.finanzierungsform_erweitert?.length > 0 && (
-              <TagGroup title="Finanzierungsform"
-                items={programme.finanzierungsform_erweitert}
-                colorStyle={{ background: 'rgba(167,139,250,0.1)', color: '#c4b5fd' }} />
-            )}
+            <TagGroup title="Zielgruppen"
+              items={programme.zielgruppen_erweitert || []}
+              colorStyle={{ background: 'rgba(96,165,250,0.1)', color: '#93c5fd' }} />
+            <TagGroup title="Finanzierungsform"
+              items={programme.finanzierungsform_erweitert || []}
+              colorStyle={{ background: 'rgba(167,139,250,0.1)', color: '#c4b5fd' }} />
 
             {/* 9. Ähnliche Programme – GRÖSSER, 2 Spalten (Fix 11) */}
             {similar?.length > 0 && (
@@ -299,11 +287,13 @@ function InfoCard({ label, value }) {
 }
 
 function TagGroup({ title, items, colorStyle }) {
+  const safeItems = Array.isArray(items) ? items : [];
+  if (!safeItems.length) return null;
   return (
     <div>
       <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>{title}</h3>
       <div className="flex flex-wrap gap-1.5">
-        {items.map((item, i) => (
+        {safeItems.map((item, i) => (
           <span key={i} className="text-xs px-2.5 py-1 rounded-lg font-medium capitalize" style={colorStyle}>
             {item}
           </span>
