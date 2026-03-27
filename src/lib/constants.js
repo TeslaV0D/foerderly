@@ -1,4 +1,5 @@
-// Alle Filter-Optionen und Labels für die UI
+// src/lib/constants.js
+// v5.2: Vollständige Branchen-Liste (16 Kategorien)
 
 export const BUNDESLAENDER = {
   BW: 'Baden-Württemberg',
@@ -50,15 +51,17 @@ export const DATENQUALITAET = {
   minimal: { label: 'Minimal', icon: '○' },
 };
 
-// v5: Branchen für Filter (erweitert)
+// v5.2: Vollständige Branchen-Liste (16 Kategorien, Multi-Select-fähig)
 export const BRANCHEN_OPTIONS = [
-  { slug: '', label: 'Alle Branchen' },
+  { slug: 'bauwesen-immobilien', label: 'Bauwesen & Immobilien' },
+  { slug: 'bildung', label: 'Bildung' },
+  { slug: 'branchenuebergreifend', label: 'Branchenübergreifend' },
   { slug: 'digitalisierung', label: 'Digitalisierung' },
   { slug: 'energie-umwelt', label: 'Energie & Umwelt' },
   { slug: 'forschung-entwicklung', label: 'Forschung & Entwicklung' },
   { slug: 'gesundheit-medizin', label: 'Gesundheit & Medizin' },
-  { slug: 'handwerk', label: 'Handwerk' },
   { slug: 'handel', label: 'Handel' },
+  { slug: 'handwerk', label: 'Handwerk' },
   { slug: 'it-software', label: 'IT & Software' },
   { slug: 'kreativwirtschaft', label: 'Kreativwirtschaft' },
   { slug: 'landwirtschaft', label: 'Landwirtschaft' },
@@ -66,8 +69,6 @@ export const BRANCHEN_OPTIONS = [
   { slug: 'produktion-industrie', label: 'Produktion & Industrie' },
   { slug: 'sozialunternehmen', label: 'Sozialunternehmen' },
   { slug: 'tourismus-gastro', label: 'Tourismus & Gastro' },
-  { slug: 'bildung', label: 'Bildung' },
-  { slug: 'bauwesen-immobilien', label: 'Bauwesen & Immobilien' },
 ];
 
 export function formatEuro(amount) {

@@ -1,7 +1,6 @@
 // src/app/programme/[id]/page.js
-// Fix 6: DataQualityBadge entfernt
-// Fix 10: Volumen "0 EUR" wird nicht angezeigt
-// Fix 11: Layout reordered – Details oben, Beschreibung unten, Ähnliche Programme größer
+// v5.2: Flat layout, Zielgruppen/Besonderheiten oben, description_full,
+//       "bis zu" Volumen, Skeleton Loader, ähnliche Programme unter Kontakt
 
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -11,7 +10,6 @@ import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import BreadcrumbSchema from '../../components/BreadcrumbSchema';
 import ProgrammeSchema from '../../components/ProgrammeSchema';
-import SimilarProgrammes from '../../components/SimilarProgrammes';
 import DeadlineIndicator from '../../components/DeadlineIndicator';
 import ContactWidget from '../../components/ContactWidget';
 import ShareButtons from '../../components/ShareButtons';
@@ -37,13 +35,15 @@ export async function generateMetadata({ params }) {
     ? `${programme.kurzname} – ${programme.name}`
     : programme.name;
 
+  const desc = programme.description_short || programme.beschreibung?.slice(0, 160) || `Förderprogramm: ${programme.name}`;
+
   return {
     title,
-    description: programme.beschreibung?.slice(0, 160) || `Förderprogramm: ${programme.name}`,
+    description: desc,
     alternates: { canonical: `https://foerderly.com/programme/${programme.id}` },
     openGraph: {
       title,
-      description: programme.beschreibung?.slice(0, 160),
+      description: desc,
       url: `https://foerderly.com/programme/${programme.id}`,
       type: 'article',
     },
@@ -57,9 +57,11 @@ export default async function ProgrammeDetailPage({ params }) {
 
   const similar = await getSimilarProgrammes(programme, 6);
   const art = FOERDERARTEN[programme.foerderart] || FOERDERARTEN.zuschuss;
-  // Fix 10: Nur anzeigen wenn > 0
   const hasVolumen = programme.volumen_max_eur > 0;
   const pageUrl = `https://foerderly.com/programme/${programme.id}`;
+
+  // Vollbeschreibung: description_full > beschreibung
+  const fullDescription = programme.description_full || programme.beschreibung;
 
   const breadcrumbs = [
     { name: 'Startseite', url: 'https://foerderly.com' },
@@ -82,9 +84,7 @@ export default async function ProgrammeDetailPage({ params }) {
           Zurück zur Suche
         </Link>
 
-        {/* Fix 11: Reordered Layout */}
-
-        {/* 1. Header (Name, Förderart) */}
+        {/* ═══ HEADER ═══ */}
         <div className="mb-6">
           <div className="flex flex-wrap items-center gap-2 mb-3">
             <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium badge-${programme.foerderart}`}>
@@ -100,175 +100,183 @@ export default async function ProgrammeDetailPage({ params }) {
             {programme.name}
           </h1>
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{programme.foerdergeber}</p>
-
-          <div className="flex items-center gap-4 mt-4">
-            <ShareButtons url={pageUrl} title={programme.name} />
-            <FreshnessIndicator date={programme.aktualisiert_am} />
-          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-
-            {/* 2. Fördervolumen-Box (Fix 10: nur wenn > 0) */}
+        {/* ═══ ACTION BAR: Volumen + Buttons (persistent) ═══ */}
+        <div className="rounded-2xl p-4 sm:p-5 mb-6"
+          style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)' }}>
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+            {/* Volumen */}
             {hasVolumen && (
-              <div className="rounded-2xl p-5" style={{ background: 'var(--accent-muted)', border: '1px solid rgba(52,211,153,0.15)' }}>
-                <p className="text-xs font-medium mb-1" style={{ color: 'var(--accent-text)' }}>Förderhöhe</p>
-                <p className="text-3xl font-bold" style={{ color: 'var(--accent-text)' }}>
-                  {programme.volumen_min_eur === programme.volumen_max_eur
-                    ? formatEuro(programme.volumen_max_eur)
-                    : `${programme.volumen_min_eur > 0 ? formatEuro(programme.volumen_min_eur) + ' – ' : 'bis '}${formatEuro(programme.volumen_max_eur)}`}
+              <div className="flex-1 min-w-0">
+                <p className="text-xs mb-0.5" style={{ color: 'var(--text-muted)' }}>Förderhöhe</p>
+                <p className="text-xl sm:text-2xl font-bold" style={{ color: 'var(--accent-text)' }}>
+                  bis zu {formatEuro(programme.volumen_max_eur)}
                 </p>
-                <div className="flex gap-4 mt-2">
-                  {programme.eigenanteil_prozent > 0 && (
-                    <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                      Eigenanteil: {programme.eigenanteil_prozent}%
-                    </p>
-                  )}
+                <div className="flex gap-3 mt-1">
                   {programme.foerderquote && (
-                    <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                       Förderquote: bis {programme.foerderquote}%
-                    </p>
+                    </span>
+                  )}
+                  {programme.eigenanteil_prozent > 0 && (
+                    <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                      Eigenanteil: {programme.eigenanteil_prozent}%
+                    </span>
                   )}
                 </div>
               </div>
             )}
 
-            {/* 3. Details-Grid – NACH OBEN (Fix 11) */}
-            <section>
-              <h2 className="text-lg font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Details</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                <InfoCard label="Förderart" value={`${art.emoji} ${art.label}`} />
-                <InfoCard label="Eigenanteil" value={programme.eigenanteil_prozent > 0 ? `${programme.eigenanteil_prozent}%` : 'Keiner'} />
-                {programme.bearbeitungszeit && (
-                  <InfoCard label="Bearbeitungszeit" value={programme.bearbeitungszeit} />
-                )}
-                {programme.antragsfrist && (
-                  <InfoCard label="Antragsfrist" value={programme.antragsfrist} />
-                )}
-                {programme.foerderquote && (
-                  <InfoCard label="Förderquote" value={`bis ${programme.foerderquote}%`} />
-                )}
-              </div>
-            </section>
-
-            {/* 4. Tags – Bundesländer, Phasen, Größen, Branchen – NACH OBEN */}
-            <section className="space-y-4">
-              <TagGroup title="Fördergebiet"
-                items={(programme.bundeslaender || []).map(bl => bl === 'BUND' ? 'Bundesweit' : (BUNDESLAENDER[bl] || bl))}
-                colorStyle={{ background: 'var(--violet-muted)', color: 'var(--violet-accent)' }} />
-              <TagGroup title="Geeignete Phasen"
-                items={(programme.phasen || []).map(ph => PHASEN[ph] || ph)}
-                colorStyle={{ background: 'rgba(251,191,36,0.1)', color: '#fbbf24' }} />
-              <TagGroup title="Unternehmensgrößen"
-                items={(programme.groessen || []).map(gr => GROESSEN[gr] || gr)}
-                colorStyle={{ background: 'rgba(244,114,182,0.1)', color: '#f472b6' }} />
-              <TagGroup title="Branchen"
-                items={(programme.branchen || []).map(br => br.name)}
-                colorStyle={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)' }} />
-            </section>
-
-            {/* 5. Beschreibung – NACH UNTEN (Fix 11) */}
-            {programme.beschreibung && (
-              <section>
-                <h2 className="text-lg font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Beschreibung</h2>
-                <p className="text-sm leading-relaxed whitespace-pre-line" style={{ color: 'var(--text-secondary)' }}>
-                  {programme.beschreibung}
-                </p>
-              </section>
-            )}
-
-            {/* 6. Besonderheiten */}
-            {(programme.besonderheiten || []).length > 0 && (
-              <section>
-                <h2 className="text-lg font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Besonderheiten & Hinweise</h2>
-                <div className="space-y-2">
-                  {(programme.besonderheiten || []).map((item, i) => (
-                    <div key={i} className="flex gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                      <span style={{ color: 'var(--accent-text)' }}>•</span>
-                      <span>{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* Rechtsgrundlagen */}
-            {(programme.rechtsgrundlagen || []).length > 0 && (
-              <section>
-                <h2 className="text-lg font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Rechtsgrundlagen</h2>
-                <div className="space-y-1">
-                  {(programme.rechtsgrundlagen || []).map((rg, i) => (
-                    <p key={i} className="text-sm" style={{ color: 'var(--text-secondary)' }}>{rg}</p>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* Zielgruppen + Finanzierungsform */}
-            <TagGroup title="Zielgruppen"
-              items={programme.zielgruppen_erweitert || []}
-              colorStyle={{ background: 'rgba(96,165,250,0.1)', color: '#93c5fd' }} />
-            <TagGroup title="Finanzierungsform"
-              items={programme.finanzierungsform_erweitert || []}
-              colorStyle={{ background: 'rgba(167,139,250,0.1)', color: '#c4b5fd' }} />
-
-            {/* 9. Ähnliche Programme – GRÖSSER, 2 Spalten (Fix 11) */}
-            {similar?.length > 0 && (
-              <section>
-                <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Ähnliche Programme</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {similar.filter(p => p.id !== programme.id).slice(0, 6).map(prog => {
-                    const simArt = FOERDERARTEN[prog.foerderart] || FOERDERARTEN.zuschuss;
-                    return (
-                      <Link key={prog.id} href={`/programme/${prog.id}`}
-                        className="card p-4 block transition-all">
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                          <span className={`text-xs px-2 py-0.5 rounded-md font-medium badge-${prog.foerderart}`}>
-                            {simArt.emoji} {simArt.label}
-                          </span>
-                          {prog.volumen_max_eur > 0 && (
-                            <span className="text-xs font-semibold" style={{ color: 'var(--accent-text)' }}>
-                              {formatEuro(prog.volumen_max_eur)}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm font-medium line-clamp-2" style={{ color: 'var(--text-primary)' }}>
-                          {prog.kurzname || prog.name}
-                        </p>
-                        <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                          {prog.foerdergeber}
-                        </p>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-4">
-            <div className="rounded-2xl p-5 space-y-3" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)' }}>
+            {/* Action Buttons */}
+            <div className="flex flex-wrap gap-2 shrink-0">
               {programme.url_antrag && (
                 <a href={programme.url_antrag} target="_blank" rel="noopener noreferrer"
-                  className="block w-full text-center px-4 py-3 text-sm font-medium rounded-xl transition-all"
+                  className="px-4 py-2.5 text-sm font-medium rounded-xl transition-all"
                   style={{ background: 'linear-gradient(135deg, var(--accent-start), var(--accent-end))', color: '#0f0f13' }}>
                   Zum Antrag →
                 </a>
               )}
               {programme.url_quelle && (
                 <a href={programme.url_quelle} target="_blank" rel="noopener noreferrer"
-                  className="block w-full text-center px-4 py-3 text-sm font-medium rounded-xl transition-all"
+                  className="px-4 py-2.5 text-sm font-medium rounded-xl transition-all"
                   style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', color: 'var(--text-secondary)' }}>
-                  Originalquelle
+                  Quelle
                 </a>
               )}
+              <ShareButtons url={pageUrl} title={programme.name} />
             </div>
-
-            {/* 8. Kontakt-Widget */}
-            <ContactWidget kontakte={programme.kontakte} />
           </div>
+        </div>
+
+        {/* ═══ MAIN CONTENT (flat, no sidebar) ═══ */}
+        <div className="space-y-6">
+
+          {/* 1. Zielgruppen (Badges, oben) */}
+          <TagGroup title="Zielgruppen"
+            items={programme.zielgruppen_erweitert || []}
+            colorStyle={{ background: 'rgba(96,165,250,0.1)', color: '#93c5fd' }} />
+
+          {/* 2. Besonderheiten (oben) */}
+          {(programme.besonderheiten || []).length > 0 && (
+            <section>
+              <h2 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Besonderheiten & Hinweise</h2>
+              <div className="space-y-1.5">
+                {(programme.besonderheiten || []).map((item, i) => (
+                  <div key={i} className="flex gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    <span style={{ color: 'var(--accent-text)' }}>•</span>
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* 3. Details-Grid (flat, no collapse) */}
+          <section>
+            <h2 className="text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Details</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              <InfoCard label="Förderart" value={`${art.emoji} ${art.label}`} />
+              {programme.eigenanteil_prozent > 0 && (
+                <InfoCard label="Eigenanteil" value={`${programme.eigenanteil_prozent}%`} />
+              )}
+              {programme.foerderquote && (
+                <InfoCard label="Förderquote" value={`bis ${programme.foerderquote}%`} />
+              )}
+              {programme.bearbeitungszeit && (
+                <InfoCard label="Bearbeitungszeit" value={programme.bearbeitungszeit} />
+              )}
+              {programme.antragsfrist && (
+                <InfoCard label="Antragsfrist" value={programme.antragsfrist} />
+              )}
+            </div>
+          </section>
+
+          {/* 4. Tags: Bundesländer, Phasen, Größen, Branchen (flat) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <TagGroup title="Fördergebiet"
+              items={(programme.bundeslaender || []).map(bl => bl === 'BUND' ? 'Bundesweit' : (BUNDESLAENDER[bl] || bl))}
+              colorStyle={{ background: 'var(--violet-muted)', color: 'var(--violet-accent)' }} />
+            <TagGroup title="Geeignete Phasen"
+              items={(programme.phasen || []).map(ph => PHASEN[ph] || ph)}
+              colorStyle={{ background: 'rgba(251,191,36,0.1)', color: '#fbbf24' }} />
+            <TagGroup title="Unternehmensgrößen"
+              items={(programme.groessen || []).map(gr => GROESSEN[gr] || gr)}
+              colorStyle={{ background: 'rgba(244,114,182,0.1)', color: '#f472b6' }} />
+            <TagGroup title="Branchen"
+              items={(programme.branchen || []).map(br => br.name)}
+              colorStyle={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)' }} />
+          </div>
+
+          {/* Finanzierungsform */}
+          <TagGroup title="Finanzierungsform"
+            items={programme.finanzierungsform_erweitert || []}
+            colorStyle={{ background: 'rgba(167,139,250,0.1)', color: '#c4b5fd' }} />
+
+          {/* 5. Beschreibung (VOLLSTÄNDIG, unkürzt) */}
+          {fullDescription && (
+            <section>
+              <h2 className="text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Beschreibung</h2>
+              <div className="rounded-xl p-4 sm:p-5" style={{ background: 'var(--bg-elevated)' }}>
+                <p className="text-sm leading-relaxed whitespace-pre-line" style={{ color: 'var(--text-secondary)' }}>
+                  {fullDescription}
+                </p>
+              </div>
+            </section>
+          )}
+
+          {/* 6. Rechtsgrundlagen */}
+          {(programme.rechtsgrundlagen || []).length > 0 && (
+            <section>
+              <h2 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Rechtsgrundlagen</h2>
+              <div className="space-y-1">
+                {(programme.rechtsgrundlagen || []).map((rg, i) => (
+                  <p key={i} className="text-sm" style={{ color: 'var(--text-secondary)' }}>{rg}</p>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* 7. Kontakt */}
+          <ContactWidget kontakte={programme.kontakte} />
+
+          {/* 8. Freshness */}
+          <div className="flex items-center gap-2">
+            <FreshnessIndicator date={programme.aktualisiert_am} />
+          </div>
+
+          {/* 9. Ähnliche Programme (UNTER Kontakt, 2-spaltig) */}
+          {similar?.length > 0 && (
+            <section>
+              <h2 className="text-sm font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Ähnliche Programme</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {similar.filter(p => p.id !== programme.id).slice(0, 6).map(prog => {
+                  const simArt = FOERDERARTEN[prog.foerderart] || FOERDERARTEN.zuschuss;
+                  return (
+                    <Link key={prog.id} href={`/programme/${prog.id}`}
+                      className="card p-4 block transition-all">
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <span className={`text-xs px-2 py-0.5 rounded-md font-medium badge-${prog.foerderart}`}>
+                          {simArt.emoji} {simArt.label}
+                        </span>
+                        {prog.volumen_max_eur > 0 && (
+                          <span className="text-xs font-semibold" style={{ color: 'var(--accent-text)' }}>
+                            bis zu {formatEuro(prog.volumen_max_eur)}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm font-medium line-clamp-2" style={{ color: 'var(--text-primary)' }}>
+                        {prog.kurzname || prog.name}
+                      </p>
+                      <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                        {prog.foerdergeber}
+                      </p>
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+          )}
         </div>
 
         <Footer />
@@ -280,7 +288,7 @@ export default async function ProgrammeDetailPage({ params }) {
 function InfoCard({ label, value }) {
   return (
     <div className="rounded-xl p-3" style={{ background: 'var(--bg-elevated)' }}>
-      <p className="text-xs mb-0.5" style={{ color: 'var(--text-muted)' }}>{label}</p>
+      <p className="text-[11px] mb-0.5" style={{ color: 'var(--text-muted)' }}>{label}</p>
       <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{value}</p>
     </div>
   );

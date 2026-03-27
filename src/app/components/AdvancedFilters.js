@@ -1,15 +1,19 @@
 // src/app/components/AdvancedFilters.js
-// Fix 7: Datenqualität-Filter komplett entfernt
+// v5.2: Branchen Multi-Select (Checkboxes), "bis zu" Volumen-Display
 'use client';
 
 import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { BUNDESLAENDER, PHASEN, GROESSEN, FOERDERARTEN } from '@/lib/constants';
+import { useRouter } from 'next/navigation';
+import { BUNDESLAENDER, PHASEN, GROESSEN, FOERDERARTEN, BRANCHEN_OPTIONS } from '@/lib/constants';
 
 export default function AdvancedFilters({ currentFilters }) {
   const router = useRouter();
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showBranchen, setShowBranchen] = useState(false);
   const [localQ, setLocalQ] = useState(currentFilters.q || '');
+
+  // Parse branchen from comma-separated string to array
+  const selectedBranchen = (currentFilters.branchen || '').split(',').filter(Boolean);
 
   function applyFilters(overrides = {}) {
     const params = new URLSearchParams();
@@ -27,14 +31,24 @@ export default function AdvancedFilters({ currentFilters }) {
     applyFilters({ q: localQ });
   }
 
+  function toggleBranche(slug) {
+    const current = new Set(selectedBranchen);
+    if (current.has(slug)) {
+      current.delete(slug);
+    } else {
+      current.add(slug);
+    }
+    const newValue = [...current].join(',');
+    applyFilters({ branchen: newValue, branche: '' });
+  }
+
   function resetAll() {
     setLocalQ('');
     router.push('/search');
   }
 
-  // Fix 7: datenqualitaet aus activeCount entfernt
   const activeCount = Object.entries(currentFilters)
-    .filter(([k, v]) => v && k !== 'q' && k !== 'sortBy' && k !== 'sortDir' && k !== 'datenqualitaet')
+    .filter(([k, v]) => v && !['q', 'sortBy', 'sortDir', 'datenqualitaet', 'page'].includes(k))
     .length;
 
   return (
@@ -43,7 +57,6 @@ export default function AdvancedFilters({ currentFilters }) {
         className="rounded-2xl p-4"
         style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)' }}
       >
-        {/* Zeile 1: Suchfeld + Suchen-Button */}
         <div className="flex gap-2">
           <input
             type="text"
@@ -61,7 +74,6 @@ export default function AdvancedFilters({ currentFilters }) {
             Suchen
           </button>
         </div>
-        {/* Zeile 2: Filter-Button (full-width auf Mobile) */}
         <button
           type="button"
           onClick={() => setShowAdvanced(!showAdvanced)}
@@ -86,7 +98,7 @@ export default function AdvancedFilters({ currentFilters }) {
           className="rounded-2xl p-5 animate-fade-up"
           style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)' }}
         >
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             <FilterSelect
               label="Bundesland"
               value={currentFilters.bundesland}
@@ -114,25 +126,81 @@ export default function AdvancedFilters({ currentFilters }) {
                 ...Object.entries(FOERDERARTEN).map(([k, v]) => ({ value: k, label: `${v.emoji} ${v.label}` })),
               ]}
             />
+          </div>
+
+          {/* v5.2: Branchen Multi-Select */}
+          <div className="mt-4 pt-4" style={{ borderTop: '1px solid var(--border-subtle)' }}>
+            <button
+              type="button"
+              onClick={() => setShowBranchen(!showBranchen)}
+              className="flex items-center gap-2 text-sm cursor-pointer"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              <span className="text-[11px] font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+                Branchen
+              </span>
+              {selectedBranchen.length > 0 && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-md font-medium"
+                  style={{ background: 'var(--accent-muted)', color: 'var(--accent-text)' }}>
+                  {selectedBranchen.length}
+                </span>
+              )}
+              <svg
+                className={`w-3.5 h-3.5 transition-transform ${showBranchen ? 'rotate-180' : ''}`}
+                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {showBranchen && (
+              <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                {BRANCHEN_OPTIONS.map((b) => {
+                  const isSelected = selectedBranchen.includes(b.slug);
+                  return (
+                    <label
+                      key={b.slug}
+                      className="flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs cursor-pointer transition-all"
+                      style={{
+                        background: isSelected ? 'var(--accent-muted)' : 'var(--bg-elevated)',
+                        border: isSelected ? '1px solid rgba(52,211,153,0.25)' : '1px solid transparent',
+                        color: isSelected ? 'var(--accent-text)' : 'var(--text-secondary)',
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleBranche(b.slug)}
+                        className="rounded cursor-pointer accent-emerald-500"
+                        style={{ width: '14px', height: '14px' }}
+                      />
+                      <span className="truncate">{b.label}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Sortierung + Extras */}
+          <div className="flex flex-wrap items-center gap-3 mt-4 pt-4" style={{ borderTop: '1px solid var(--border-subtle)' }}>
             <FilterSelect
-              label="Sortierung"
+              label=""
+              inline
               value={currentFilters.sortBy && currentFilters.sortDir ? `${currentFilters.sortBy}_${currentFilters.sortDir}` : ''}
               onChange={(v) => {
                 const [sortBy, sortDir] = v ? v.split('_') : ['', ''];
                 applyFilters({ sortBy, sortDir });
               }}
               options={[
-                { value: '', label: 'Standard' },
+                { value: '', label: 'Sortierung: Standard' },
                 { value: 'volumen_desc', label: 'Höchste Förderung' },
                 { value: 'volumen_asc', label: 'Niedrigste Förderung' },
                 { value: 'name_asc', label: 'Name A-Z' },
                 { value: 'aktualisiert_desc', label: 'Neueste zuerst' },
               ]}
             />
-          </div>
 
-          {/* Fix 7: Datenqualität-Filter komplett entfernt */}
-          <div className="flex flex-wrap items-center gap-3 mt-4 pt-4" style={{ borderTop: '1px solid var(--border-subtle)' }}>
             <label className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
               <input
                 type="checkbox"
@@ -175,7 +243,7 @@ function FilterSelect({ label, value, options, onChange, inline = false }) {
           background: 'var(--bg-elevated)',
           border: '1px solid var(--border-default)',
           color: 'var(--text-primary)',
-          minWidth: inline ? '150px' : undefined,
+          minWidth: inline ? '170px' : undefined,
         }}
       >
         {options.map(opt => (

@@ -1,9 +1,6 @@
 // src/app/search/page.js
-// Fix 4: Min 800ms Loading-Animation
-// Fix 5: Loading-Status sichtbar
-// Fix 6: DataQualityBadge entfernt aus Import/Render
-// Fix 7: Datenqualität-Filter entfernt
-// Fix 9: FilterSidebar sticky (via FilterSidebar.js)
+// v5.2: Redesigned Search-Cards (Zielgruppen + Förderart), "bis zu" Display,
+//       Branchen Multi-Select, description_short
 
 import Link from 'next/link';
 import { searchProgrammes } from '@/lib/search';
@@ -40,11 +37,11 @@ export default async function SearchPage({ searchParams }) {
   const sp = await searchParams;
   const page = Math.max(1, parseInt(sp?.page) || 1);
 
-  // Fix 7: datenqualitaet Filter entfernt
   const filters = {
     bundesland: sp?.bundesland || '',
     phase: sp?.phase || '',
     groesse: sp?.groesse || '',
+    branchen: sp?.branchen || '',
     branche: sp?.branche || '',
     foerderart: sp?.foerderart || '',
     q: sp?.q || '',
@@ -160,10 +157,29 @@ function getPageNumbers(current, total) {
   return pages;
 }
 
-// Fix 6: DataQualityBadge komplett entfernt
+/**
+ * v5.2 Search Result Card
+ * Zeigt: Förderart Badge, "bis zu" Volumen, Titel, Fördergeber,
+ *        Zielgruppen (Bullets), Förderart-Details, Bundesland-Tags
+ */
 function SearchResultCard({ programme, index }) {
   const art = FOERDERARTEN[programme.foerderart] || FOERDERARTEN.zuschuss;
-  const hasVolumen = programme.volumen_min_eur || programme.volumen_max_eur;
+  const hasVolumen = programme.volumen_max_eur > 0;
+
+  // Zielgruppen aus zielgruppen_erweitert
+  const zielgruppen = programme.zielgruppen_erweitert || [];
+
+  // Förderart-Infos sammeln
+  const foerderInfos = [];
+  if (art.label) foerderInfos.push(art.label);
+  if (programme.foerderquote) foerderInfos.push(`bis ${programme.foerderquote}% Förderquote`);
+  if (programme.eigenanteil_prozent > 0) foerderInfos.push(`${programme.eigenanteil_prozent}% Eigenanteil`);
+
+  // Kurzbeschreibung: description_short > gekürzte beschreibung
+  const shortDesc = programme.description_short
+    || (programme.beschreibung && programme.beschreibung.length > 120
+      ? programme.beschreibung.slice(0, 120).replace(/\s+\S*$/, '') + '...'
+      : programme.beschreibung);
 
   return (
     <Link
@@ -171,19 +187,20 @@ function SearchResultCard({ programme, index }) {
       className="card p-4 sm:p-5 block animate-fade-up flex flex-col h-full"
       style={{ animationDelay: `${Math.min(index, 10) * 40}ms` }}
     >
+      {/* Row 1: Förderart Badge + Volumen */}
       <div className="flex items-start justify-between gap-2 mb-2.5">
         <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium badge-${programme.foerderart}`}>
           {art.emoji} {art.label}
         </span>
         {hasVolumen && (
-          <span className="text-xs font-semibold px-2.5 py-1 rounded-lg shrink-0" style={{ background: 'var(--accent-muted)', color: 'var(--accent-text)' }}>
-            {programme.volumen_min_eur === programme.volumen_max_eur
-              ? formatEuro(programme.volumen_max_eur)
-              : `bis ${formatEuro(programme.volumen_max_eur)}`}
+          <span className="text-xs font-semibold px-2.5 py-1 rounded-lg shrink-0"
+            style={{ background: 'var(--accent-muted)', color: 'var(--accent-text)' }}>
+            bis zu {formatEuro(programme.volumen_max_eur)}
           </span>
         )}
       </div>
 
+      {/* Title */}
       <h3 className="text-base font-semibold mb-1 leading-snug line-clamp-2" style={{ color: 'var(--text-primary)' }}>
         {programme.kurzname && programme.kurzname !== programme.name && (
           <span className="gradient-text">{programme.kurzname} – </span>
@@ -191,18 +208,51 @@ function SearchResultCard({ programme, index }) {
         {programme.name}
       </h3>
 
-      <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>{programme.foerdergeber}</p>
+      {/* Fördergeber */}
+      <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>{programme.foerdergeber}</p>
 
-      <div className="flex-grow">
-        {programme.beschreibung && (
-          <p className="text-sm leading-relaxed mb-3 line-clamp-2" style={{ color: 'var(--text-secondary)' }}>
-            {programme.beschreibung}
-          </p>
+      {/* Content area */}
+      <div className="flex-grow space-y-2.5">
+        {/* Zielgruppen */}
+        {zielgruppen.length > 0 && (
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>
+              Zielgruppen
+            </p>
+            <div className="flex flex-wrap gap-1">
+              {zielgruppen.slice(0, 4).map((zg, i) => (
+                <span key={i} className="text-[11px] px-2 py-0.5 rounded-md font-medium capitalize"
+                  style={{ background: 'rgba(96,165,250,0.1)', color: '#93c5fd' }}>
+                  {zg}
+                </span>
+              ))}
+              {zielgruppen.length > 4 && (
+                <span className="text-[11px] px-2 py-0.5 rounded-md"
+                  style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}>
+                  +{zielgruppen.length - 4}
+                </span>
+              )}
+            </div>
+          </div>
         )}
 
+        {/* Förderdetails */}
+        {foerderInfos.length > 0 && (
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>
+              Förderung
+            </p>
+            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+              {foerderInfos.join(' · ')}
+            </p>
+          </div>
+        )}
+
+        {/* Bottom tags: Bundesländer + Deadline */}
         <div className="flex flex-wrap items-center gap-1.5">
           {(programme.bundeslaender || []).slice(0, 3).map(bl => (
-            <span key={bl} className="text-[11px] px-2 py-0.5 rounded-md font-medium" style={{ background: 'var(--violet-muted)', color: 'var(--violet-accent)' }}>
+            <span key={bl} className="text-[11px] px-2 py-0.5 rounded-md font-medium"
+              style={{ background: 'var(--violet-muted)', color: 'var(--violet-accent)' }}>
               {bl === 'BUND' ? 'Bundesweit' : (BUNDESLAENDER[bl] || bl)}
             </span>
           ))}
@@ -210,6 +260,7 @@ function SearchResultCard({ programme, index }) {
         </div>
       </div>
 
+      {/* CTA */}
       <div className="mt-auto pt-3 flex items-center justify-between" style={{ borderTop: '1px solid var(--border-subtle)' }}>
         <span className="text-xs font-medium" style={{ color: 'var(--accent-text)' }}>Details ansehen</span>
         <svg className="w-3.5 h-3.5" style={{ color: 'var(--accent-text)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>

@@ -1,9 +1,9 @@
-name: Förderly Scraper v5
+name: Förderly Scraper v5.2
 
 on:
   schedule:
-    # Mo + Do um 4:00 CET (= 3:00 UTC)
-    - cron: '0 3 * * 1,4'
+    # Dienstag 04:00 CET (= 03:00 UTC)
+    - cron: '0 3 * * 2'
   workflow_dispatch:
     inputs:
       max_programmes:
@@ -36,7 +36,7 @@ jobs:
       - name: Install Dependencies
         run: pip install requests beautifulsoup4 lxml supabase
 
-      - name: Run Scraper v5
+      - name: Run Scraper v5.2
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}

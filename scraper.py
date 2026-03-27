@@ -1,21 +1,16 @@
 """
-FÖRDERLY – Scraper v5.1
+FÖRDERLY – Scraper v5.2
 ========================
-Repariert v5.0: Alle 12 Probleme behoben.
+Aufbauend auf v5.1. Neue Features:
 
-Fixes:
-  1. Delays erhöht (2.0s List, 2.5s Detail, 45s Read-Timeout)
-  2. Exponential Backoff + Rate-Limit-Handling (429/403)
-  3. extract_antragsfrist() erweitert (mehr Keywords, Fulltext-Regex)
-  4. extract_rechtsgrundlagen() erweitert (mehr Keywords, Fallback)
-  5. extract_foerderquote() erweitert (mehr Patterns)
-  6. extract_bearbeitungszeit() erweitert (mehr Keywords)
-  7. extract_besonderheiten() erweitert (Inline-Text-Erkennung)
-  8. extract_kontakte() erweitert (Plain-Text Email+Tel Regex)
-  9. Beschreibungen auf 2000 Zeichen erhöht, Volltext-Tab
-  10. full_text auf 5000 Zeichen erhöht
-  11. Jede Extract-Funktion hat Try-Except
-  12. scraper_errors Tabelle wird beschrieben
+v5.2 Changes:
+  1. description_short (max 300 Zeichen, Smart-Cut bei Satzende)
+  2. description_full (KEINE Zeichenlimits mehr)
+  3. Kurztext-Sektion von foerderdatenbank.de wird separat gescrapt
+  4. Upsert schreibt description_short + description_full in DB
+  5. Schedule: 1x pro Woche (Dienstag)
+
+Bestehende v5.1 Fixes bleiben erhalten.
 """
 
 import requests as req
@@ -685,6 +680,27 @@ def detect_zielgruppen(text):
         return []
 
 
+def smart_cut(text, max_chars=300):
+    """v5.2: Intelligenter Cut bei Satzende, max max_chars Zeichen."""
+    if not text:
+        return None
+    if len(text) <= max_chars:
+        return text
+    # Finde letzten Satzende-Punkt vor max_chars
+    truncated = text[:max_chars]
+    last_dot = truncated.rfind('.')
+    last_excl = truncated.rfind('!')
+    last_quest = truncated.rfind('?')
+    best_cut = max(last_dot, last_excl, last_quest)
+    if best_cut > 50:  # Mindestens 50 Zeichen, sonst zu kurz
+        return text[:best_cut + 1]
+    # Fallback: Cut bei letztem Leerzeichen + Ellipsis
+    last_space = truncated.rfind(' ')
+    if last_space > 50:
+        return text[:last_space] + '...'
+    return truncated + '...'
+
+
 def detect_finanzierungsform(text):
     try:
         txt = text.lower()
@@ -740,7 +756,7 @@ def fetch_details(session, all_programmes, fast_mode=False):
     errors = 0
 
     print(f"\n{'='*60}", flush=True)
-    print(f"PHASE 2: {total} Detailseiten abrufen (v5.1)", flush=True)
+    print(f"PHASE 2: {total} Detailseiten abrufen (v5.2)", flush=True)
     print(f"{'='*60}\n", flush=True)
 
     for i, (url, info) in enumerate(all_programmes.items()):
@@ -862,29 +878,50 @@ def parse_detail_v5(session, url, info):
     except Exception as e:
         log_error(url, "DTDDParsing", str(e), "detail")
 
-    # Fix 9: Beschreibung – 2000 Zeichen, Kurztext + Volltext kombinieren
+    # v5.2: Dual-Text Strategy – description_short + description_full (KEINE Limits)
     try:
-        beschreibung_parts = []
-        for tag_text in ["Kurztext", "Volltext"]:
-            h3 = soup.find("h3", string=re.compile(tag_text, re.I))
-            if h3:
-                parts = []
-                for sib in h3.find_next_siblings():
-                    if sib.name in ("h2", "h3"):
-                        break
-                    if sib.name == "p":
-                        t = sib.get_text(strip=True)
-                        if t:
-                            parts.append(t)
-                    if len(" ".join(parts)) > 2000:
-                        break
-                if parts:
-                    beschreibung_parts.append(" ".join(parts))
+        kurztext_parts = []
+        volltext_parts = []
 
-        # Kombiniere Kurztext + Volltext wenn beide vorhanden
-        if beschreibung_parts:
-            combined = " ".join(beschreibung_parts)
-            prog["beschreibung"] = combined[:2000]  # Fix 9: 2000 statt 800
+        # Separate Kurztext-Sektion scrapen
+        h3_kurz = soup.find("h3", string=re.compile("Kurztext", re.I))
+        if h3_kurz:
+            for sib in h3_kurz.find_next_siblings():
+                if sib.name in ("h2", "h3"):
+                    break
+                if sib.name == "p":
+                    t = sib.get_text(strip=True)
+                    if t:
+                        kurztext_parts.append(t)
+
+        # Volltext-Sektion scrapen (KEINE Zeichenlimits)
+        h3_voll = soup.find("h3", string=re.compile("Volltext", re.I))
+        if h3_voll:
+            for sib in h3_voll.find_next_siblings():
+                if sib.name in ("h2", "h3"):
+                    break
+                if sib.name in ("p", "li"):
+                    t = sib.get_text(strip=True)
+                    if t:
+                        volltext_parts.append(t)
+
+        # description_full: Alles, keine Limits
+        if volltext_parts:
+            prog["description_full"] = " ".join(volltext_parts)
+        elif kurztext_parts:
+            prog["description_full"] = " ".join(kurztext_parts)
+
+        # description_short: Kurztext-Sektion oder Smart-Cut aus Volltext
+        if kurztext_parts:
+            short_text = " ".join(kurztext_parts)
+            prog["description_short"] = smart_cut(short_text, 300)
+        elif prog.get("description_full"):
+            prog["description_short"] = smart_cut(prog["description_full"], 300)
+
+        # beschreibung: Backward-compatible, Kurztext + Volltext
+        if kurztext_parts or volltext_parts:
+            combined = " ".join(kurztext_parts + volltext_parts)
+            prog["beschreibung"] = combined  # Keine Limits mehr
         else:
             meta = info["meta"]
             bits = []
@@ -892,7 +929,10 @@ def parse_detail_v5(session, url, info):
                 bits.append(meta["Was wird gefördert?"])
             if meta.get("Wer wird gefördert?"):
                 bits.append(meta["Wer wird gefördert?"])
-            prog["beschreibung"] = " | ".join(bits) if bits else None
+            fallback = " | ".join(bits) if bits else None
+            prog["beschreibung"] = fallback
+            prog["description_full"] = fallback
+            prog["description_short"] = smart_cut(fallback, 300) if fallback else None
     except Exception as e:
         log_error(url, "BeschreibungParsing", str(e), "detail")
 
@@ -946,6 +986,8 @@ def parse_detail_v5(session, url, info):
         antragsfrist=antragsfrist, rechtsgrundlagen=rechtsgrundlagen,
         foerderquote=foerderquote, bearbeitungszeit=bearbeitungszeit,
         besonderheiten=besonderheiten, kontakte=kontakte,
+        description_short=prog.get("description_short"),
+        description_full=prog.get("description_full"),
     )
 
     if amounts:
@@ -960,8 +1002,9 @@ def build_final_programme(name, url_quelle, beschreibung, foerdergeber,
                           kurzname=None, url_antrag=None, eigenanteil_prozent=0,
                           antragsfrist=None, rechtsgrundlagen=None,
                           foerderquote=None, bearbeitungszeit=None,
-                          besonderheiten=None, kontakte=None):
-    """Baut finales Programm-Dict mit v5.1 Feldern."""
+                          besonderheiten=None, kontakte=None,
+                          description_short=None, description_full=None):
+    """Baut finales Programm-Dict mit v5.2 Feldern (description_short/full)."""
     txt = raw_text.lower()
 
     phasen = set()
@@ -1019,6 +1062,8 @@ def build_final_programme(name, url_quelle, beschreibung, foerdergeber,
         "name": name,
         "kurzname": kurzname,
         "beschreibung": beschreibung,
+        "description_short": description_short or smart_cut(beschreibung, 300),
+        "description_full": description_full or beschreibung,
         "foerdergeber": foerdergeber,
         "foerderart": foerderart,
         "volumen_min_eur": vmin,
@@ -1064,7 +1109,7 @@ def export_to_supabase(programmes):
     sb = create_client(url, key)
     today = datetime.now().strftime("%Y-%m-%d")
 
-    print(f"\n📤 Schreibe {len(programmes)} Programme in Supabase (v5.1)...", flush=True)
+    print(f"\n📤 Schreibe {len(programmes)} Programme in Supabase (v5.2)...", flush=True)
 
     BATCH = 50
     upserted = 0
@@ -1076,6 +1121,8 @@ def export_to_supabase(programmes):
             "name": p["name"],
             "kurzname": p.get("kurzname"),
             "beschreibung": p.get("beschreibung"),
+            "description_short": p.get("description_short"),
+            "description_full": p.get("description_full"),
             "foerdergeber": p.get("foerdergeber"),
             "foerderart": p.get("foerderart", "zuschuss"),
             "volumen_min_eur": p.get("volumen_min_eur", 0),
@@ -1163,7 +1210,7 @@ def main():
     session.headers.update(HEADERS)
 
     print(f"\n{'='*60}", flush=True)
-    print(f"  FÖRDERLY SCRAPER v5.1", flush=True)
+    print(f"  FÖRDERLY SCRAPER v5.2", flush=True)
     print(f"  {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", flush=True)
     print(f"{'='*60}\n", flush=True)
 

@@ -1,7 +1,6 @@
 /**
- * FÖRDERLY – Server-seitige Suche
- * Wird von SSR-Routes verwendet (search, programme/[id])
- * Direkter Supabase-Zugriff, kein API-Umweg.
+ * FÖRDERLY v5.2 – Server-seitige Suche
+ * Updates: Branchen Multi-Select, description_short/full Felder
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -20,9 +19,10 @@ function getSupabase() {
 
 /**
  * Server-seitige Suche mit Pagination (für SSR /search Route)
+ * v5.2: branchen als Multi-Select (kommasepariert), description_short/full
  */
 export async function searchProgrammes({
-  bundesland, phase, groesse, branche, foerderart,
+  bundesland, phase, groesse, branchen, branche, foerderart,
   q, sortBy, sortDir, page = 1, limit = 20,
   minVolumen, maxVolumen, hatDeadline, datenqualitaet,
 } = {}) {
@@ -31,7 +31,7 @@ export async function searchProgrammes({
 
   let query = sb
     .from('programme')
-    .select('*', { count: 'exact' })
+    .select('id, name, kurzname, beschreibung, description_short, foerdergeber, foerderart, volumen_min_eur, volumen_max_eur, eigenanteil_prozent, bundeslaender, phasen, groessen, branchen, antragsfrist, hat_deadline, foerderquote, zielgruppen_erweitert, finanzierungsform_erweitert', { count: 'exact' })
     .eq('aktiv', true)
     .eq('status', 'aktiv');
 
@@ -41,9 +41,23 @@ export async function searchProgrammes({
   }
   if (phase) query = query.contains('phasen', [phase]);
   if (groesse) query = query.contains('groessen', [groesse]);
-  if (branche) {
-    query = query.or(`branchen.cs.[{"slug":"${branche}"}],branchen.cs.[{"slug":"branchenuebergreifend"}]`);
+
+  // v5.2: Branchen Multi-Select Support
+  // branchen kommt als kommaseparierter String: "it-software,digitalisierung"
+  const branchenParam = branchen || branche;
+  if (branchenParam) {
+    const branchenList = branchenParam.split(',').filter(Boolean);
+    if (branchenList.length === 1) {
+      query = query.or(`branchen.cs.[{"slug":"${branchenList[0]}"}],branchen.cs.[{"slug":"branchenuebergreifend"}]`);
+    } else if (branchenList.length > 1) {
+      // Multi-Select: Programm muss mindestens eine der gewählten Branchen haben
+      const orClauses = branchenList
+        .map(b => `branchen.cs.[{"slug":"${b}"}]`)
+        .join(',');
+      query = query.or(`${orClauses},branchen.cs.[{"slug":"branchenuebergreifend"}]`);
+    }
   }
+
   if (foerderart) query = query.eq('foerderart', foerderart);
 
   // v5 Advanced Filter
@@ -90,6 +104,7 @@ export async function searchProgrammes({
 
 /**
  * Einzelnes Programm laden (für /programme/[id])
+ * v5.2: Holt auch description_short und description_full
  */
 export async function getProgrammeById(id) {
   const sb = getSupabase();
@@ -115,7 +130,7 @@ export async function getSimilarProgrammes(programme, limit = 4) {
 
   const { data, error } = await sb
     .from('programme')
-    .select('id, name, kurzname, foerderart, foerdergeber, volumen_max_eur, bundeslaender, datenqualitaet')
+    .select('id, name, kurzname, foerderart, foerdergeber, volumen_max_eur, bundeslaender')
     .eq('aktiv', true)
     .eq('status', 'aktiv')
     .eq('foerderart', programme.foerderart)
