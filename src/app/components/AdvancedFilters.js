@@ -214,10 +214,13 @@ export default function AdvancedFilters({ currentFilters }) {
             {activeCount > 0 && (
               <button
                 onClick={resetAll}
-                className="text-xs px-3 py-1.5 rounded-lg transition-all ml-auto cursor-pointer"
-                style={{ color: 'var(--text-muted)', background: 'var(--bg-elevated)' }}
+                className="text-xs px-3 py-1.5 rounded-lg transition-all ml-auto cursor-pointer font-medium"
+                style={{
+                  color: '#0f0f13',
+                  background: 'linear-gradient(135deg, var(--accent-start), var(--accent-end))',
+                }}
               >
-                Alle zurücksetzen
+                Alle zurücksetzen ({activeCount})
               </button>
             )}
           </div>
