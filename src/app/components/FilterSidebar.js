@@ -1,25 +1,9 @@
 // src/app/components/FilterSidebar.js
-// Fix 3: cursor-pointer auf alle Buttons, Selects, Inputs
-// Fix 9: Sidebar sticky auf Desktop
+// v6: Branchen as multi-select CustomSelect (5th filter, visually consistent)
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { BUNDESLAENDER, PHASEN, GROESSEN } from '@/lib/constants';
-
-const BRANCHEN_OPTIONS = [
-  { slug: '', label: 'Alle Branchen' },
-  { slug: 'digitalisierung', label: 'Digitalisierung' },
-  { slug: 'energie-umwelt', label: 'Energie & Umwelt' },
-  { slug: 'forschung-entwicklung', label: 'Forschung & Entwicklung' },
-  { slug: 'gesundheit-medizin', label: 'Gesundheit & Medizin' },
-  { slug: 'handwerk', label: 'Handwerk' },
-  { slug: 'handel', label: 'Handel' },
-  { slug: 'it-software', label: 'IT & Software' },
-  { slug: 'kreativwirtschaft', label: 'Kreativwirtschaft' },
-  { slug: 'produktion-industrie', label: 'Produktion & Industrie' },
-  { slug: 'sozialunternehmen', label: 'Sozialunternehmen' },
-  { slug: 'bildung', label: 'Bildung' },
-];
+import { BUNDESLAENDER, PHASEN, GROESSEN, BRANCHEN_OPTIONS } from '@/lib/constants';
 
 function CustomSelect({ label, value, options, onChange, placeholder = 'Alle' }) {
   const [open, setOpen] = useState(false);
@@ -40,7 +24,6 @@ function CustomSelect({ label, value, options, onChange, placeholder = 'Alle' })
       <label className="block text-[11px] font-medium uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>
         {label}
       </label>
-      {/* Fix 3: cursor-pointer */}
       <button
         type="button"
         onClick={() => setOpen(!open)}
@@ -93,12 +76,154 @@ function CustomSelect({ label, value, options, onChange, placeholder = 'Alle' })
   );
 }
 
+/**
+ * Multi-Select dropdown for Branchen
+ * Looks identical to CustomSelect but allows multiple selections
+ */
+function MultiSelect({ label, selected = [], options, onChange, placeholder = 'Alle Branchen' }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    function handleClick(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  const selectedCount = selected.length;
+  const displayLabel = selectedCount === 0
+    ? placeholder
+    : selectedCount === 1
+      ? options.find(o => o.value === selected[0])?.label || placeholder
+      : `${selectedCount} ausgewählt`;
+
+  function toggleValue(val) {
+    if (!val) {
+      onChange([]);
+      return;
+    }
+    const newSelected = selected.includes(val)
+      ? selected.filter(s => s !== val)
+      : [...selected, val];
+    onChange(newSelected);
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <label className="block text-[11px] font-medium uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>
+        {label}
+        {selectedCount > 0 && (
+          <span
+            className="ml-1.5 inline-flex items-center justify-center text-[10px] px-1.5 py-0.5 rounded-md font-medium"
+            style={{ background: 'var(--accent-muted)', color: 'var(--accent-text)' }}
+          >
+            {selectedCount}
+          </span>
+        )}
+      </label>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-sm rounded-xl transition-all text-left cursor-pointer"
+        style={{
+          background: 'var(--bg-elevated)',
+          border: open ? '1px solid var(--accent-solid)' : selectedCount > 0 ? '1px solid rgba(52,211,153,0.25)' : '1px solid var(--border-default)',
+          color: selectedCount > 0 ? 'var(--text-primary)' : 'var(--text-muted)',
+          boxShadow: open ? '0 0 0 3px var(--accent-muted)' : 'none',
+        }}
+      >
+        <span className="truncate">{displayLabel}</span>
+        <svg
+          className={`w-4 h-4 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
+          style={{ color: 'var(--text-muted)' }}
+          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {open && (
+        <div
+          className="absolute z-50 mt-1.5 w-full max-h-64 overflow-y-auto rounded-xl py-1.5 shadow-xl"
+          style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)' }}
+        >
+          {/* "Alle" reset option */}
+          <button
+            type="button"
+            onClick={() => { onChange([]); setOpen(false); }}
+            className="w-full text-left px-3 py-2 text-sm transition-colors cursor-pointer"
+            style={{
+              color: selectedCount === 0 ? 'var(--accent-text)' : 'var(--text-secondary)',
+              background: selectedCount === 0 ? 'var(--accent-muted)' : 'transparent',
+            }}
+            onMouseEnter={(e) => {
+              if (selectedCount > 0) e.target.style.background = 'var(--bg-elevated)';
+            }}
+            onMouseLeave={(e) => {
+              if (selectedCount > 0) e.target.style.background = 'transparent';
+            }}
+          >
+            {placeholder}
+          </button>
+
+          {options.map((opt) => {
+            const isSelected = selected.includes(opt.value);
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => toggleValue(opt.value)}
+                className="w-full text-left px-3 py-2 text-sm transition-colors cursor-pointer flex items-center gap-2"
+                style={{
+                  color: isSelected ? 'var(--accent-text)' : 'var(--text-secondary)',
+                  background: isSelected ? 'var(--accent-muted)' : 'transparent',
+                }}
+                onMouseEnter={(e) => {
+                  if (!isSelected) e.target.style.background = 'var(--bg-elevated)';
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSelected) e.target.style.background = isSelected ? 'var(--accent-muted)' : 'transparent';
+                }}
+              >
+                <span
+                  className="w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0"
+                  style={{
+                    borderColor: isSelected ? 'var(--accent-text)' : 'var(--border-default)',
+                    background: isSelected ? 'var(--accent-text)' : 'transparent',
+                  }}
+                >
+                  {isSelected && (
+                    <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="#0f0f13" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  )}
+                </span>
+                <span className="truncate">{opt.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function FilterSidebar({ filters, onChange, onSearch, loading }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const activeFilterCount = Object.entries(filters).filter(([k, v]) => v && k !== 'q').length;
 
   function handleChange(key, value) {
     onChange({ ...filters, [key]: value || '' });
+  }
+
+  // Parse branchen from comma-separated string
+  const selectedBranchen = (filters.branchen || filters.branche || '').split(',').filter(Boolean);
+
+  function handleBranchenChange(newSelected) {
+    const value = newSelected.join(',');
+    onChange({ ...filters, branchen: value, branche: '' });
   }
 
   const bundeslandOptions = [
@@ -116,7 +241,9 @@ export default function FilterSidebar({ filters, onChange, onSearch, loading }) 
     ...Object.entries(GROESSEN).map(([key, label]) => ({ value: key, label })),
   ];
 
-  const branchenOptions = BRANCHEN_OPTIONS.map(b => ({ value: b.slug, label: b.label }));
+  const branchenSelectOptions = BRANCHEN_OPTIONS
+    .filter(b => b.slug !== 'branchenuebergreifend')
+    .map(b => ({ value: b.slug, label: b.label }));
 
   const filterContent = (
     <div className="space-y-4">
@@ -126,12 +253,17 @@ export default function FilterSidebar({ filters, onChange, onSearch, loading }) 
         onChange={(v) => handleChange('phase', v)} placeholder="Alle Phasen" />
       <CustomSelect label="Unternehmensgröße" value={filters.groesse} options={groessenOptions}
         onChange={(v) => handleChange('groesse', v)} placeholder="Alle Größen" />
-      <CustomSelect label="Branche" value={filters.branche} options={branchenOptions}
-        onChange={(v) => handleChange('branche', v)} placeholder="Alle Branchen" />
+      <MultiSelect
+        label="Branchen"
+        selected={selectedBranchen}
+        options={branchenSelectOptions}
+        onChange={handleBranchenChange}
+        placeholder="Alle Branchen"
+      />
 
       {activeFilterCount > 0 && (
         <button
-          onClick={() => onChange({ bundesland: '', phase: '', groesse: '', branche: '', q: filters.q })}
+          onClick={() => onChange({ bundesland: '', phase: '', groesse: '', branchen: '', branche: '', q: filters.q })}
           className="w-full text-xs py-2 rounded-xl transition-all cursor-pointer"
           style={{ color: 'var(--text-muted)', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)' }}
         >
@@ -143,7 +275,7 @@ export default function FilterSidebar({ filters, onChange, onSearch, loading }) 
 
   return (
     <>
-      {/* ─── Desktop Sidebar – Fix 9: sticky ─── */}
+      {/* ─── Desktop Sidebar – sticky ─── */}
       <aside className="hidden lg:block w-64 shrink-0">
         <div
           className="sticky rounded-2xl p-5"
@@ -169,7 +301,6 @@ export default function FilterSidebar({ filters, onChange, onSearch, loading }) 
           style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)' }}
         >
           <div className="flex gap-2">
-            {/* Fix 3: cursor-pointer auf Input */}
             <input
               type="text"
               value={filters.q}

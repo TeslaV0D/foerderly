@@ -1,5 +1,5 @@
 // src/app/components/AdvancedFilters.js
-// v5.2: Branchen Multi-Select (Checkboxes), "bis zu" Volumen-Display
+// v6: Branchen in grid (not collapsible), hatDeadline removed, Förderarten from constants (4 items)
 'use client';
 
 import { useState } from 'react';
@@ -9,7 +9,6 @@ import { BUNDESLAENDER, PHASEN, GROESSEN, FOERDERARTEN, BRANCHEN_OPTIONS } from 
 export default function AdvancedFilters({ currentFilters }) {
   const router = useRouter();
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [showBranchen, setShowBranchen] = useState(false);
   const [localQ, setLocalQ] = useState(currentFilters.q || '');
 
   // Parse branchen from comma-separated string to array
@@ -98,6 +97,7 @@ export default function AdvancedFilters({ currentFilters }) {
           className="rounded-2xl p-5 animate-fade-up"
           style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)' }}
         >
+          {/* Row 1: Standard filters */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             <FilterSelect
               label="Bundesland"
@@ -128,14 +128,9 @@ export default function AdvancedFilters({ currentFilters }) {
             />
           </div>
 
-          {/* v5.2: Branchen Multi-Select */}
+          {/* Row 2: Branchen Multi-Select (visible by default, not collapsible) */}
           <div className="mt-4 pt-4" style={{ borderTop: '1px solid var(--border-subtle)' }}>
-            <button
-              type="button"
-              onClick={() => setShowBranchen(!showBranchen)}
-              className="flex items-center gap-2 text-sm cursor-pointer"
-              style={{ color: 'var(--text-secondary)' }}
-            >
+            <div className="flex items-center gap-2 mb-3">
               <span className="text-[11px] font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
                 Branchen
               </span>
@@ -145,44 +140,35 @@ export default function AdvancedFilters({ currentFilters }) {
                   {selectedBranchen.length}
                 </span>
               )}
-              <svg
-                className={`w-3.5 h-3.5 transition-transform ${showBranchen ? 'rotate-180' : ''}`}
-                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-
-            {showBranchen && (
-              <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-                {BRANCHEN_OPTIONS.map((b) => {
-                  const isSelected = selectedBranchen.includes(b.slug);
-                  return (
-                    <label
-                      key={b.slug}
-                      className="flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs cursor-pointer transition-all"
-                      style={{
-                        background: isSelected ? 'var(--accent-muted)' : 'var(--bg-elevated)',
-                        border: isSelected ? '1px solid rgba(52,211,153,0.25)' : '1px solid transparent',
-                        color: isSelected ? 'var(--accent-text)' : 'var(--text-secondary)',
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => toggleBranche(b.slug)}
-                        className="rounded cursor-pointer accent-emerald-500"
-                        style={{ width: '14px', height: '14px' }}
-                      />
-                      <span className="truncate">{b.label}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            )}
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+              {BRANCHEN_OPTIONS.filter(b => b.slug !== 'branchenuebergreifend').map((b) => {
+                const isSelected = selectedBranchen.includes(b.slug);
+                return (
+                  <label
+                    key={b.slug}
+                    className="flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs cursor-pointer transition-all"
+                    style={{
+                      background: isSelected ? 'var(--accent-muted)' : 'var(--bg-elevated)',
+                      border: isSelected ? '1px solid rgba(52,211,153,0.25)' : '1px solid transparent',
+                      color: isSelected ? 'var(--accent-text)' : 'var(--text-secondary)',
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleBranche(b.slug)}
+                      className="rounded cursor-pointer accent-emerald-500"
+                      style={{ width: '14px', height: '14px' }}
+                    />
+                    <span className="truncate">{b.label}</span>
+                  </label>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Sortierung + Extras */}
+          {/* Sortierung + Reset (hatDeadline removed in v6) */}
           <div className="flex flex-wrap items-center gap-3 mt-4 pt-4" style={{ borderTop: '1px solid var(--border-subtle)' }}>
             <FilterSelect
               label=""
@@ -200,16 +186,6 @@ export default function AdvancedFilters({ currentFilters }) {
                 { value: 'aktualisiert_desc', label: 'Neueste zuerst' },
               ]}
             />
-
-            <label className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
-              <input
-                type="checkbox"
-                checked={currentFilters.hatDeadline === 'true'}
-                onChange={(e) => applyFilters({ hatDeadline: e.target.checked ? 'true' : '' })}
-                className="rounded cursor-pointer"
-              />
-              Nur mit Deadline
-            </label>
 
             {activeCount > 0 && (
               <button

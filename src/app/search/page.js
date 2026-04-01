@@ -1,6 +1,5 @@
 // src/app/search/page.js
-// v5.2: Redesigned Search-Cards (Zielgruppen + Förderart), "bis zu" Display,
-//       Branchen Multi-Select, description_short
+// v6: hatDeadline removed from filters
 
 import Link from 'next/link';
 import { searchProgrammes } from '@/lib/search';
@@ -49,7 +48,6 @@ export default async function SearchPage({ searchParams }) {
     sortDir: sp?.sortDir || '',
     minVolumen: sp?.minVolumen || '',
     maxVolumen: sp?.maxVolumen || '',
-    hatDeadline: sp?.hatDeadline || '',
   };
 
   const { ergebnisse, total } = await searchProgrammes({
@@ -158,24 +156,19 @@ function getPageNumbers(current, total) {
 }
 
 /**
- * v5.2 Search Result Card
- * Zeigt: Förderart Badge, "bis zu" Volumen, Titel, Fördergeber,
- *        Zielgruppen (Bullets), Förderart-Details, Bundesland-Tags
+ * v6 Search Result Card
  */
 function SearchResultCard({ programme, index }) {
   const art = FOERDERARTEN[programme.foerderart] || FOERDERARTEN.zuschuss;
   const hasVolumen = programme.volumen_max_eur > 0;
 
-  // Zielgruppen aus zielgruppen_erweitert
   const zielgruppen = programme.zielgruppen_erweitert || [];
 
-  // Förderart-Infos sammeln
   const foerderInfos = [];
   if (art.label) foerderInfos.push(art.label);
   if (programme.foerderquote) foerderInfos.push(`bis ${programme.foerderquote}% Förderquote`);
   if (programme.eigenanteil_prozent > 0) foerderInfos.push(`${programme.eigenanteil_prozent}% Eigenanteil`);
 
-  // Kurzbeschreibung: description_short > gekürzte beschreibung
   const shortDesc = programme.description_short
     || (programme.beschreibung && programme.beschreibung.length > 120
       ? programme.beschreibung.slice(0, 120).replace(/\s+\S*$/, '') + '...'

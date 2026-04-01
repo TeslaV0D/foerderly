@@ -1,5 +1,5 @@
 // src/lib/constants.js
-// v5.2: Vollständige Branchen-Liste (16 Kategorien)
+// v6: Förderarten auf 4 reduziert (steuerlich + beratung entfernt, 0 Programme)
 
 export const BUNDESLAENDER = {
   BW: 'Baden-Württemberg',
@@ -40,8 +40,6 @@ export const FOERDERARTEN = {
   kredit: { label: 'Kredit', color: '#2563eb', emoji: '🏦' },
   buergschaft: { label: 'Bürgschaft', color: '#7c3aed', emoji: '🛡️' },
   beteiligung: { label: 'Beteiligung', color: '#ea580c', emoji: '🤝' },
-  beratung: { label: 'Beratung', color: '#0891b2', emoji: '💡' },
-  steuerlich: { label: 'Steuerlich', color: '#4f46e5', emoji: '📋' },
 };
 
 // v5: Datenqualität Labels

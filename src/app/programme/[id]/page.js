@@ -1,6 +1,7 @@
 // src/app/programme/[id]/page.js
-// v5.2.1: Layout-Fixes – Sidebar rechts (Summe, Kontakt, Ähnliche Programme),
-//         größere Beschreibung, Branchen mittig
+// v6: Mobile layout reordered (Förderung + Kontakt above content),
+//     Originalquelle button styled with accent outline,
+//     Ähnliche Programme stays at bottom on mobile
 
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -107,6 +108,56 @@ export default async function ProgrammeDetailPage({ params }) {
           </div>
         </div>
 
+        {/* ═══ MOBILE: Förderung + Kontakt OBEN (nur < lg) ═══ */}
+        <div className="lg:hidden space-y-4 mb-6">
+          {/* Förderhöhe Box */}
+          {hasVolumen && (
+            <div className="rounded-2xl p-5" style={{ background: 'var(--accent-muted)', border: '1px solid rgba(52,211,153,0.15)' }}>
+              <p className="text-xs font-medium mb-1" style={{ color: 'var(--accent-text)' }}>Förderhöhe</p>
+              <p className="text-2xl font-bold" style={{ color: 'var(--accent-text)' }}>
+                bis zu {formatEuro(programme.volumen_max_eur)}
+              </p>
+              <div className="flex flex-col gap-1 mt-2">
+                {programme.foerderquote && (
+                  <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    Förderquote: bis {programme.foerderquote}%
+                  </p>
+                )}
+                {programme.eigenanteil_prozent > 0 && (
+                  <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    Eigenanteil: {programme.eigenanteil_prozent}%
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Action Buttons (mobile) */}
+          <div className="rounded-2xl p-5 space-y-3" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)' }}>
+            {programme.url_antrag && (
+              <a href={programme.url_antrag} target="_blank" rel="noopener noreferrer"
+                className="block w-full text-center px-4 py-3 text-sm font-medium rounded-xl transition-all"
+                style={{ background: 'linear-gradient(135deg, var(--accent-start), var(--accent-end))', color: '#0f0f13' }}>
+                Zum Antrag →
+              </a>
+            )}
+            {programme.url_quelle && (
+              <a href={programme.url_quelle} target="_blank" rel="noopener noreferrer"
+                className="block w-full text-center px-4 py-3 text-sm font-medium rounded-xl transition-all hover:opacity-90"
+                style={{
+                  background: 'transparent',
+                  border: '1px solid var(--accent-solid)',
+                  color: 'var(--accent-text)',
+                }}>
+                Originalquelle ↗
+              </a>
+            )}
+          </div>
+
+          {/* Kontakt-Widget (mobile) */}
+          <ContactWidget kontakte={programme.kontakte} />
+        </div>
+
         {/* ═══ 2-COLUMN LAYOUT: Content links, Sidebar rechts ═══ */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
@@ -199,8 +250,8 @@ export default async function ProgrammeDetailPage({ params }) {
             )}
           </div>
 
-          {/* ── RIGHT SIDEBAR (1/3, sticky) ── */}
-          <div className="lg:col-span-1">
+          {/* ── RIGHT SIDEBAR (1/3, sticky) – only visible on desktop ── */}
+          <div className="hidden lg:block lg:col-span-1">
             <div
               className="sticky space-y-4"
               style={{
@@ -231,7 +282,7 @@ export default async function ProgrammeDetailPage({ params }) {
                 </div>
               )}
 
-              {/* Action Buttons */}
+              {/* Action Buttons (desktop) */}
               <div className="rounded-2xl p-5 space-y-3" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)' }}>
                 {programme.url_antrag && (
                   <a href={programme.url_antrag} target="_blank" rel="noopener noreferrer"
@@ -242,58 +293,75 @@ export default async function ProgrammeDetailPage({ params }) {
                 )}
                 {programme.url_quelle && (
                   <a href={programme.url_quelle} target="_blank" rel="noopener noreferrer"
-                    className="block w-full text-center px-4 py-3 text-sm font-medium rounded-xl transition-all"
-                    style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', color: 'var(--text-secondary)' }}>
-                    Originalquelle
+                    className="block w-full text-center px-4 py-3 text-sm font-medium rounded-xl transition-all hover:opacity-90"
+                    style={{
+                      background: 'transparent',
+                      border: '1px solid var(--accent-solid)',
+                      color: 'var(--accent-text)',
+                    }}>
+                    Originalquelle ↗
                   </a>
                 )}
               </div>
 
-              {/* Kontakt-Widget */}
+              {/* Kontakt-Widget (desktop) */}
               <ContactWidget kontakte={programme.kontakte} />
 
-              {/* Ähnliche Programme */}
+              {/* Ähnliche Programme (desktop) */}
               {similar?.length > 0 && (
-                <div className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)' }}>
-                  <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>
-                    Ähnliche Programme
-                  </h3>
-                  <div className="space-y-3">
-                    {similar.filter(p => p.id !== programme.id).slice(0, 4).map(prog => {
-                      const simArt = FOERDERARTEN[prog.foerderart] || FOERDERARTEN.zuschuss;
-                      return (
-                        <Link key={prog.id} href={`/programme/${prog.id}`}
-                          className="block rounded-xl p-3 transition-all"
-                          style={{ background: 'var(--bg-elevated)' }}>
-                          <div className="flex items-start justify-between gap-2 mb-1">
-                            <span className={`text-[10px] px-2 py-0.5 rounded-md font-medium badge-${prog.foerderart}`}>
-                              {simArt.emoji} {simArt.label}
-                            </span>
-                            {prog.volumen_max_eur > 0 && (
-                              <span className="text-[10px] font-semibold" style={{ color: 'var(--accent-text)' }}>
-                                bis zu {formatEuro(prog.volumen_max_eur)}
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs font-medium line-clamp-2 mt-1" style={{ color: 'var(--text-primary)' }}>
-                            {prog.kurzname || prog.name}
-                          </p>
-                          <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                            {prog.foerdergeber}
-                          </p>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </div>
+                <SimilarSection similar={similar} programme={programme} />
               )}
             </div>
           </div>
         </div>
 
+        {/* ═══ MOBILE: Ähnliche Programme ganz unten (nur < lg) ═══ */}
+        {similar?.length > 0 && (
+          <div className="lg:hidden mt-6">
+            <SimilarSection similar={similar} programme={programme} />
+          </div>
+        )}
+
         <Footer />
       </div>
     </main>
+  );
+}
+
+function SimilarSection({ similar, programme }) {
+  return (
+    <div className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)' }}>
+      <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>
+        Ähnliche Programme
+      </h3>
+      <div className="space-y-3">
+        {similar.filter(p => p.id !== programme.id).slice(0, 4).map(prog => {
+          const simArt = FOERDERARTEN[prog.foerderart] || FOERDERARTEN.zuschuss;
+          return (
+            <Link key={prog.id} href={`/programme/${prog.id}`}
+              className="block rounded-xl p-3 transition-all"
+              style={{ background: 'var(--bg-elevated)' }}>
+              <div className="flex items-start justify-between gap-2 mb-1">
+                <span className={`text-[10px] px-2 py-0.5 rounded-md font-medium badge-${prog.foerderart}`}>
+                  {simArt.emoji} {simArt.label}
+                </span>
+                {prog.volumen_max_eur > 0 && (
+                  <span className="text-[10px] font-semibold" style={{ color: 'var(--accent-text)' }}>
+                    bis zu {formatEuro(prog.volumen_max_eur)}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs font-medium line-clamp-2 mt-1" style={{ color: 'var(--text-primary)' }}>
+                {prog.kurzname || prog.name}
+              </p>
+              <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                {prog.foerdergeber}
+              </p>
+            </Link>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
