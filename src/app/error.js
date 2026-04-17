@@ -1,33 +1,39 @@
 'use client';
 
-/**
- * Custom Error Page (Next.js App Router)
- * Fängt serverseitige und clientseitige Fehler ab.
- * SICHERHEIT: Keine internen Details an den User.
- */
 export default function Error({ reset }) {
   return (
-    <div className="min-h-screen flex items-center justify-center  p-6">
-      <div className="max-w-md text-center">
-        <div className="text-5xl mb-4">⚠️</div>
-        <h2 className="text-xl font-semibold text-white mb-2">
+    <div
+      className="min-h-screen flex items-center justify-center"
+      style={{ padding: 24, position: 'relative', zIndex: 10 }}
+    >
+      <div style={{ maxWidth: 440, textAlign: 'center' }}>
+        <div style={{ fontSize: 56, marginBottom: 16 }}>⚠️</div>
+        <h1
+          className="gradient-text"
+          style={{
+            fontSize: 28,
+            fontWeight: 800,
+            letterSpacing: '-1px',
+            marginBottom: 10,
+          }}
+        >
           Ein Fehler ist aufgetreten
-        </h2>
-        <p className="text-sm text-gray-400 mb-6">
-          Bitte versuchen Sie es erneut. Wenn das Problem weiterhin besteht,
-          laden Sie die Seite neu.
+        </h1>
+        <p
+          style={{
+            fontSize: 14,
+            color: 'var(--muted)',
+            marginBottom: 24,
+            lineHeight: 1.55,
+          }}
+        >
+          Bitte versuchen Sie es erneut. Wenn das Problem weiterhin besteht, laden Sie die Seite neu.
         </p>
-        <div className="flex gap-3 justify-center">
-          <button
-            onClick={() => reset()}
-            className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium rounded-lg transition-colors"
-          >
+        <div className="flex justify-center" style={{ gap: 10 }}>
+          <button onClick={() => reset()} className="btn-accent">
             Erneut versuchen
           </button>
-          <a
-            href="/"
-            className="px-5 py-2.5 bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm font-medium rounded-lg transition-colors"
-          >
+          <a href="/" className="btn-ghost">
             Zur Startseite
           </a>
         </div>

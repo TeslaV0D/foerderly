@@ -114,56 +114,125 @@ export default function Quellen() {
       <Header />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-8 sm:pt-12 pb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-          Förderquellen
+        <h1
+          style={{
+            fontSize: 'clamp(32px, 4.5vw, 44px)',
+            fontWeight: 800,
+            letterSpacing: '-1.5px',
+            color: 'var(--text)',
+            marginBottom: 12,
+          }}
+        >
+          Förder<span className="gradient-text">quellen</span>
         </h1>
-        <p className="text-sm sm:text-base mb-10" style={{ color: 'var(--text-secondary)' }}>
+        <p
+          style={{
+            fontSize: 16,
+            fontWeight: 300,
+            color: 'var(--muted)',
+            marginBottom: 48,
+            maxWidth: 560,
+            lineHeight: 1.55,
+          }}
+        >
           Alle Quellen und Förderinstitutionen auf einen Blick. Direkt zu den Originalseiten.
         </p>
 
         {Object.entries(QUELLEN).map(([key, section]) => (
-          <section key={key} className="mb-12">
-            <div className="mb-5">
-              <h2 className="text-lg font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
+          <section key={key} style={{ marginBottom: 48 }}>
+            <div style={{ marginBottom: 20 }}>
+              <h2
+                style={{
+                  fontSize: 22,
+                  fontWeight: 700,
+                  letterSpacing: '-0.5px',
+                  color: 'var(--text)',
+                  marginBottom: 6,
+                }}
+              >
                 {section.title}
               </h2>
-              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{section.desc}</p>
+              <p style={{ fontSize: 14, color: 'var(--muted)' }}>{section.desc}</p>
             </div>
 
-            <div className={`grid gap-3 ${key === 'laender' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'}`}>
+            <div
+              className={key === 'laender' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid grid-cols-1 sm:grid-cols-2'}
+              style={{ gap: 14 }}
+            >
               {section.sources.map((source) => (
                 <a
                   key={source.url}
                   href={source.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="card group p-4 flex flex-col justify-between"
+                  className="quellen-card"
+                  style={{
+                    background: 'var(--bg2)',
+                    border: '1.5px solid var(--border2)',
+                    borderRadius: 'var(--radius)',
+                    padding: 18,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    textDecoration: 'none',
+                    transition: 'border-color 0.2s, transform 0.2s',
+                  }}
                 >
                   <div>
-                    <div className="flex items-start justify-between gap-2 mb-1.5">
-                      <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+                      <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.2px' }}>
                         {source.name}
                       </h3>
                       {source.tag && (
-                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-md shrink-0" style={{ background: 'var(--accent-muted)', color: 'var(--accent-text)' }}>
+                        <span
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 600,
+                            padding: '2px 8px',
+                            borderRadius: 100,
+                            background: 'color-mix(in oklch, var(--accent) 14%, transparent)',
+                            color: 'var(--accent)',
+                            flexShrink: 0,
+                          }}
+                        >
                           {source.tag}
                         </span>
                       )}
                       {source.region && (
-                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-md shrink-0" style={{ background: 'var(--violet-muted)', color: 'var(--violet-accent)' }}>
+                        <span
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 600,
+                            padding: '2px 8px',
+                            borderRadius: 100,
+                            background: 'color-mix(in oklch, var(--accent2) 14%, transparent)',
+                            color: 'var(--accent2)',
+                            flexShrink: 0,
+                          }}
+                        >
                           {source.region}
                         </span>
                       )}
                     </div>
                     {source.desc && (
-                      <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                        {source.desc}
-                      </p>
+                      <p style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--muted)' }}>{source.desc}</p>
                     )}
                   </div>
-                  <div className="mt-3 flex items-center gap-1 text-xs font-medium" style={{ color: 'var(--accent-text)' }}>
+                  <div
+                    className="quellen-arrow"
+                    style={{
+                      marginTop: 12,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: 'var(--accent)',
+                      transition: 'gap 0.2s',
+                    }}
+                  >
                     Zur Website
-                    <svg className="w-3 h-3 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                     </svg>
                   </div>
@@ -173,35 +242,59 @@ export default function Quellen() {
           </section>
         ))}
 
-        {/* FAQ-Section (auch sichtbar für User, nicht nur JSON-LD) */}
-        <section className="mb-12">
-          <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>
+        <style>{`
+          .quellen-card:hover { border-color: color-mix(in oklch, var(--accent) 35%, var(--border2)); transform: translateY(-2px); }
+          .quellen-card:hover .quellen-arrow { gap: 8px; }
+        `}</style>
+
+        <section style={{ marginBottom: 48 }}>
+          <h2
+            style={{
+              fontSize: 22,
+              fontWeight: 700,
+              letterSpacing: '-0.5px',
+              color: 'var(--text)',
+              marginBottom: 16,
+            }}
+          >
             Häufige Fragen zu Fördermitteln
           </h2>
-          <div className="space-y-4">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {FAQS.map((faq, i) => (
               <details
                 key={i}
-                className="group rounded-xl overflow-hidden"
-                style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)' }}
+                className="group"
+                style={{
+                  background: 'var(--bg2)',
+                  border: '1.5px solid var(--border2)',
+                  borderRadius: 14,
+                  overflow: 'hidden',
+                }}
               >
                 <summary
-                  className="px-5 py-4 cursor-pointer text-sm font-medium flex items-center justify-between"
-                  style={{ color: 'var(--text-primary)' }}
+                  style={{
+                    padding: '16px 20px',
+                    cursor: 'pointer',
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: 'var(--text)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    listStyle: 'none',
+                  }}
                 >
                   {faq.question}
                   <svg
-                    className="w-4 h-4 shrink-0 transition-transform group-open:rotate-180"
-                    style={{ color: 'var(--text-muted)' }}
-                    fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                    className="group-open:rotate-180"
+                    style={{ color: 'var(--muted)', flexShrink: 0, transition: 'transform 0.2s' }}
+                    width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                   </svg>
                 </summary>
-                <div className="px-5 pb-4">
-                  <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                    {faq.answer}
-                  </p>
+                <div style={{ padding: '0 20px 16px', fontSize: 14, lineHeight: 1.6, color: 'var(--muted)' }}>
+                  {faq.answer}
                 </div>
               </details>
             ))}

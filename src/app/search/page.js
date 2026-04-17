@@ -1,14 +1,11 @@
 // src/app/search/page.js
-// v6: hatDeadline removed from filters
-
 import Link from 'next/link';
 import { searchProgrammes } from '@/lib/search';
 import { logSearchQuery } from '@/lib/queryLogger';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import AdvancedFilters from '../components/AdvancedFilters';
-import DeadlineIndicator from '../components/DeadlineIndicator';
-import { BUNDESLAENDER, FOERDERARTEN, formatEuro } from '@/lib/constants';
+import ResultCard from '../components/ResultCard';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,63 +73,65 @@ export default async function SearchPage({ searchParams }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-6">
         <AdvancedFilters currentFilters={filters} />
 
-        <div className="flex items-center justify-between mb-4 mt-4">
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-            <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{total}</span>
+        <div className="flex items-center justify-between mb-5 mt-5">
+          <p style={{ fontSize: 14, color: 'var(--muted)' }}>
+            <span style={{ fontWeight: 700, color: 'var(--text)' }}>{total}</span>
             {' '}Programm{total !== 1 ? 'e' : ''}
             {totalPages > 1 && (
-              <span style={{ color: 'var(--text-muted)' }}> · Seite {page}/{totalPages}</span>
+              <span style={{ color: 'var(--muted)' }}> · Seite {page}/{totalPages}</span>
             )}
           </p>
         </div>
 
         {ergebnisse.length > 0 ? (
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+          <div
+            style={{
+              display: 'grid',
+              gap: 20,
+              gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+            }}
+          >
             {ergebnisse.map((prog, i) => (
-              <SearchResultCard key={prog.id} programme={prog} index={i} />
+              <ResultCard key={prog.id} programme={prog} index={i} />
             ))}
           </div>
         ) : (
-          <div className="text-center py-16">
-            <div className="text-5xl mb-4">🔍</div>
-            <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+          <div style={{ textAlign: 'center', padding: '64px 0' }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>🔍</div>
+            <h3 style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.5px', color: 'var(--text)', marginBottom: 8 }}>
               Keine Programme gefunden
             </h3>
-            <p className="text-sm max-w-sm mx-auto mb-4" style={{ color: 'var(--text-secondary)' }}>
+            <p style={{ fontSize: 14, color: 'var(--muted)', maxWidth: 360, margin: '0 auto 20px' }}>
               Versuche andere Filter oder entferne Einschränkungen.
             </p>
-            <Link
-              href="/search"
-              className="px-4 py-2.5 text-sm font-medium rounded-xl"
-              style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', color: 'var(--text-secondary)' }}
-            >
+            <Link href="/search" className="btn-ghost">
               Alle Filter zurücksetzen
             </Link>
           </div>
         )}
 
         {totalPages > 1 && (
-          <nav className="mt-8 flex items-center justify-center gap-1.5" aria-label="Seitennavigation">
+          <nav
+            className="mt-10 flex items-center justify-center"
+            style={{ gap: 6 }}
+            aria-label="Seitennavigation"
+          >
             {page > 1 && (
-              <Link href={buildUrl({ page: page - 1 })} className="px-3 py-2 text-sm rounded-xl"
-                style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', color: 'var(--text-secondary)' }}>
+              <Link href={buildUrl({ page: page - 1 })} className="pill">
                 ‹ Zurück
               </Link>
             )}
-            {getPageNumbers(page, totalPages).map(p => (
-              <Link key={p} href={buildUrl({ page: p })} className="px-3 py-2 text-sm rounded-xl transition-all"
-                style={{
-                  background: p === page ? 'linear-gradient(135deg, var(--accent-start), var(--accent-end))' : 'var(--bg-card)',
-                  border: p === page ? 'none' : '1px solid var(--border-default)',
-                  color: p === page ? '#0f0f13' : 'var(--text-secondary)',
-                  fontWeight: p === page ? '600' : '400',
-                }}>
+            {getPageNumbers(page, totalPages).map((p) => (
+              <Link
+                key={p}
+                href={buildUrl({ page: p })}
+                className={`pill${p === page ? ' pill-active' : ''}`}
+              >
                 {p}
               </Link>
             ))}
             {page < totalPages && (
-              <Link href={buildUrl({ page: page + 1 })} className="px-3 py-2 text-sm rounded-xl"
-                style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)', color: 'var(--text-secondary)' }}>
+              <Link href={buildUrl({ page: page + 1 })} className="pill">
                 Weiter ›
               </Link>
             )}
@@ -153,113 +152,4 @@ function getPageNumbers(current, total) {
   if (end - start < maxVisible - 1) start = Math.max(1, end - maxVisible + 1);
   for (let i = start; i <= end; i++) pages.push(i);
   return pages;
-}
-
-/**
- * v6 Search Result Card
- */
-function SearchResultCard({ programme, index }) {
-  const art = FOERDERARTEN[programme.foerderart] || FOERDERARTEN.zuschuss;
-  const hasVolumen = programme.volumen_max_eur > 0;
-
-  const zielgruppen = programme.zielgruppen_erweitert || [];
-
-  const foerderInfos = [];
-  if (art.label) foerderInfos.push(art.label);
-  if (programme.foerderquote) foerderInfos.push(`bis ${programme.foerderquote}% Förderquote`);
-  if (programme.eigenanteil_prozent > 0) foerderInfos.push(`${programme.eigenanteil_prozent}% Eigenanteil`);
-
-  const shortDesc = programme.description_short
-    || (programme.beschreibung && programme.beschreibung.length > 120
-      ? programme.beschreibung.slice(0, 120).replace(/\s+\S*$/, '') + '...'
-      : programme.beschreibung);
-
-  return (
-    <Link
-      href={`/programme/${programme.id}`}
-      className="card p-4 sm:p-5 block animate-fade-up flex flex-col h-full"
-      style={{ animationDelay: `${Math.min(index, 10) * 40}ms` }}
-    >
-      {/* Row 1: Förderart Badge + Volumen */}
-      <div className="flex items-start justify-between gap-2 mb-2.5">
-        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium badge-${programme.foerderart}`}>
-          {art.emoji} {art.label}
-        </span>
-        {hasVolumen && (
-          <span className="text-xs font-semibold px-2.5 py-1 rounded-lg shrink-0"
-            style={{ background: 'var(--accent-muted)', color: 'var(--accent-text)' }}>
-            bis zu {formatEuro(programme.volumen_max_eur)}
-          </span>
-        )}
-      </div>
-
-      {/* Title */}
-      <h3 className="text-base font-semibold mb-1 leading-snug line-clamp-2" style={{ color: 'var(--text-primary)' }}>
-        {programme.kurzname && programme.kurzname !== programme.name && (
-          <span className="gradient-text">{programme.kurzname} – </span>
-        )}
-        {programme.name}
-      </h3>
-
-      {/* Fördergeber */}
-      <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>{programme.foerdergeber}</p>
-
-      {/* Content area */}
-      <div className="flex-grow space-y-2.5">
-        {/* Zielgruppen */}
-        {zielgruppen.length > 0 && (
-          <div>
-            <p className="text-[10px] font-medium uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>
-              Zielgruppen
-            </p>
-            <div className="flex flex-wrap gap-1">
-              {zielgruppen.slice(0, 4).map((zg, i) => (
-                <span key={i} className="text-[11px] px-2 py-0.5 rounded-md font-medium capitalize"
-                  style={{ background: 'rgba(96,165,250,0.1)', color: '#93c5fd' }}>
-                  {zg}
-                </span>
-              ))}
-              {zielgruppen.length > 4 && (
-                <span className="text-[11px] px-2 py-0.5 rounded-md"
-                  style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}>
-                  +{zielgruppen.length - 4}
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Förderdetails */}
-        {foerderInfos.length > 0 && (
-          <div>
-            <p className="text-[10px] font-medium uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>
-              Förderung
-            </p>
-            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-              {foerderInfos.join(' · ')}
-            </p>
-          </div>
-        )}
-
-        {/* Bottom tags: Bundesländer + Deadline */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          {(programme.bundeslaender || []).slice(0, 3).map(bl => (
-            <span key={bl} className="text-[11px] px-2 py-0.5 rounded-md font-medium"
-              style={{ background: 'var(--violet-muted)', color: 'var(--violet-accent)' }}>
-              {bl === 'BUND' ? 'Bundesweit' : (BUNDESLAENDER[bl] || bl)}
-            </span>
-          ))}
-          <DeadlineIndicator antragsfrist={programme.antragsfrist} hatDeadline={programme.hat_deadline} small />
-        </div>
-      </div>
-
-      {/* CTA */}
-      <div className="mt-auto pt-3 flex items-center justify-between" style={{ borderTop: '1px solid var(--border-subtle)' }}>
-        <span className="text-xs font-medium" style={{ color: 'var(--accent-text)' }}>Details ansehen</span>
-        <svg className="w-3.5 h-3.5" style={{ color: 'var(--accent-text)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-        </svg>
-      </div>
-    </Link>
-  );
 }

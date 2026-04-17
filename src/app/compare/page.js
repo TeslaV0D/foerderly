@@ -1,11 +1,3 @@
-/**
- * FÖRDERLY – Vergleichs-Seite
- * /compare?ids=123,456,789
- *
- * Bis zu 4 Programme nebeneinander vergleichen.
- * SSR – kein Caching nötig.
- */
-
 import Link from 'next/link';
 import { getProgrammesByIds } from '@/lib/search';
 import Header from '../components/Header';
@@ -14,11 +6,11 @@ import ComparisonTable from '../components/ComparisonTable';
 
 export const dynamic = 'force-dynamic';
 
-export async function generateMetadata({ searchParams }) {
-  const sp = await searchParams;
+export async function generateMetadata() {
   return {
     title: 'Förderprogramme vergleichen',
-    description: 'Vergleiche verschiedene Förderprogramme nebeneinander – Förderhöhe, Eigenanteil, Förderart und mehr.',
+    description:
+      'Vergleiche verschiedene Förderprogramme nebeneinander – Förderhöhe, Eigenanteil, Förderart und mehr.',
     robots: { index: false, follow: true },
   };
 }
@@ -58,18 +50,28 @@ export default async function ComparePage({ searchParams }) {
     <main className="min-h-screen relative z-10">
       <Header />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <Link href="/search" className="text-sm mb-2 block" style={{ color: 'var(--text-muted)' }}>
-              ← Zurück zur Suche
-            </Link>
-            <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
-              Förderprogramme vergleichen
-            </h1>
-            <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-              {programmes.length} Programme im Vergleich
-            </p>
-          </div>
+        <Link href="/search" className="btn-ghost" style={{ marginBottom: 20 }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          Zurück zur Suche
+        </Link>
+
+        <div style={{ marginBottom: 28 }}>
+          <h1
+            style={{
+              fontSize: 'clamp(28px, 4vw, 36px)',
+              fontWeight: 800,
+              letterSpacing: '-1px',
+              color: 'var(--text)',
+              marginBottom: 8,
+            }}
+          >
+            Förderprogramme <span className="gradient-text">vergleichen</span>
+          </h1>
+          <p style={{ fontSize: 14, color: 'var(--muted)' }}>
+            {programmes.length} Programm{programmes.length !== 1 ? 'e' : ''} im Vergleich
+          </p>
         </div>
 
         <ComparisonTable programmes={programmes} />
@@ -82,19 +84,32 @@ export default async function ComparePage({ searchParams }) {
 
 function EmptyState({ message }) {
   return (
-    <div className="text-center py-16">
-      <div className="text-5xl mb-4">⚖️</div>
-      <h1 className="text-xl font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+    <div style={{ textAlign: 'center', padding: '64px 0' }}>
+      <div style={{ fontSize: 48, marginBottom: 16 }}>⚖️</div>
+      <h1
+        style={{
+          fontSize: 24,
+          fontWeight: 800,
+          letterSpacing: '-0.5px',
+          color: 'var(--text)',
+          marginBottom: 10,
+        }}
+      >
         Förderprogramme vergleichen
       </h1>
-      <p className="text-sm max-w-md mx-auto mb-6" style={{ color: 'var(--text-secondary)' }}>
-        {message || 'Wähle auf der Suchseite Programme zum Vergleichen aus. Du kannst bis zu 4 Programme nebeneinander vergleichen.'}
-      </p>
-      <Link
-        href="/search"
-        className="inline-block px-6 py-3 text-sm font-medium rounded-xl"
-        style={{ background: 'linear-gradient(135deg, var(--accent-start), var(--accent-end))', color: '#0f0f13' }}
+      <p
+        style={{
+          fontSize: 14,
+          color: 'var(--muted)',
+          maxWidth: 420,
+          margin: '0 auto 24px',
+          lineHeight: 1.55,
+        }}
       >
+        {message ||
+          'Wähle auf der Suchseite Programme zum Vergleichen aus. Du kannst bis zu 4 Programme nebeneinander vergleichen.'}
+      </p>
+      <Link href="/search" className="btn-accent">
         Zur Programmsuche
       </Link>
     </div>

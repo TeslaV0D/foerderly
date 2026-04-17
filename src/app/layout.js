@@ -1,15 +1,15 @@
 // src/app/layout.js
-// Fix 12: Favicon-Icons registriert, Tab-Title Format
 import './globals.css';
-import { IBM_Plex_Sans } from 'next/font/google';
+import { Suspense } from 'react';
+import { Plus_Jakarta_Sans } from 'next/font/google';
 import ErrorBoundary from './components/ErrorBoundary';
-import ThemeProvider from './components/ThemeProvider';
 import WebsiteSchema from './components/WebsiteSchema';
 import CommandPalette from './components/CommandPalette';
+import PageLoader from './components/PageLoader';
 
-const ibmPlexSans = IBM_Plex_Sans({
+const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
+  weight: ['300', '400', '500', '600', '700', '800'],
   display: 'swap',
   variable: '--font-sans',
 });
@@ -58,7 +58,6 @@ export const metadata = {
     },
   },
 
-  // Fix 12: Favicon-Icons
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: '32x32' },
@@ -76,16 +75,22 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="de" className={ibmPlexSans.variable} suppressHydrationWarning>
-      <body
-        className="min-h-screen antialiased"
-        style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
-      >
+    <html lang="de" className={plusJakartaSans.variable} suppressHydrationWarning>
+      <body className="min-h-screen antialiased">
         <WebsiteSchema />
-        <ThemeProvider>
-          <ErrorBoundary>{children}</ErrorBoundary>
-          <CommandPalette />
-        </ThemeProvider>
+
+        <div className="mesh" aria-hidden="true">
+          <div className="blob blob-1" />
+          <div className="blob blob-2" />
+          <div className="blob blob-3" />
+        </div>
+
+        <Suspense fallback={null}>
+          <PageLoader />
+        </Suspense>
+
+        <ErrorBoundary>{children}</ErrorBoundary>
+        <CommandPalette />
       </body>
     </html>
   );

@@ -1,71 +1,114 @@
-// src/app/components/Header.js
-// Fix 8: Hover-Animation auf Navigation-Links
 'use client';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useTheme } from './ThemeProvider';
+import Button from './Button';
+
+const NAV_LINKS = [
+  { href: '/', label: 'Entdecken' },
+  { href: '/search', label: 'Programme' },
+  { href: '/quellen', label: 'Quellen' },
+];
 
 export default function Header() {
   const pathname = usePathname();
-  const { theme, toggle } = useTheme();
-
-  const navLinks = [
-    { href: '/', label: 'Start' },
-    { href: '/search', label: 'Suche' },
-    { href: '/quellen', label: 'Quellen' },
-  ];
 
   return (
     <header
-      className="sticky top-0 z-40 border-b backdrop-blur-md"
+      className="animate-fade-down"
       style={{
-        borderColor: 'var(--border-default)',
-        background: theme === 'dark'
-          ? 'rgba(24, 24, 31, 0.85)'
-          : 'rgba(255, 255, 255, 0.85)',
+        position: 'sticky',
+        top: 0,
+        zIndex: 40,
+        background: 'color-mix(in oklch, var(--bg) 85%, transparent)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        borderBottom: '1px solid var(--border2)',
       }}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex items-center">
+      <style>{`
+        .header-logo .logo-mark {
+          transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+        }
+        .header-logo:hover .logo-mark {
+          transform: rotate(8deg) scale(1.1);
+        }
+        .nav-link {
+          padding: 8px 16px;
+          border-radius: 10px;
+          color: var(--muted);
+          font-size: 14px;
+          font-weight: 500;
+          text-decoration: none;
+          transition: color 0.18s, background 0.18s;
+        }
+        .nav-link:hover { color: var(--text); background: var(--bg3); }
+        .nav-link.active { color: var(--text); }
+
+        .palette-trigger {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 7px 12px;
+          border-radius: 10px;
+          background: var(--bg3);
+          border: 1px solid var(--border2);
+          color: var(--muted);
+          font-size: 12px;
+          cursor: pointer;
+          transition: color 0.18s, border-color 0.18s;
+          font-family: inherit;
+        }
+        .palette-trigger:hover { color: var(--text); border-color: var(--border); }
+        .palette-trigger kbd {
+          display: inline-flex;
+          align-items: center;
+          padding: 2px 6px;
+          border-radius: 6px;
+          background: var(--bg2);
+          border: 1px solid var(--border);
+          font-size: 10px;
+          font-family: inherit;
+          color: var(--muted);
+        }
+      `}</style>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex items-center gap-4">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5 group shrink-0">
+        <Link href="/" className="header-logo" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', flexShrink: 0 }}>
           <div
-            className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-shadow duration-300 group-hover:shadow-lg"
-            style={{ background: 'linear-gradient(135deg, var(--accent-start), var(--accent-end))' }}
+            className="logo-mark"
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              background: 'var(--accent)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--bg)',
+              fontWeight: 800,
+              fontSize: 18,
+              letterSpacing: '-0.5px',
+              flexShrink: 0,
+            }}
+            aria-hidden="true"
           >
-            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+            F
           </div>
-          <span className="text-lg font-bold gradient-text">Förderly</span>
+          <span style={{ fontWeight: 800, fontSize: 22, letterSpacing: '-0.5px', color: 'var(--text)' }}>
+            Förderly
+          </span>
         </Link>
 
-        {/* Nav – Fix 8: Hover-Animation */}
-        <nav className="flex-1 flex items-center justify-center gap-1">
-          {navLinks.map(({ href, label }) => {
-            const isActive = pathname === href || (href === '/search' && pathname.startsWith('/search'));
+        {/* Nav */}
+        <nav style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+          {NAV_LINKS.map(({ href, label }) => {
+            const isActive = href === '/'
+              ? pathname === '/'
+              : pathname === href || (href === '/search' && pathname.startsWith('/search')) || (href === '/quellen' && pathname.startsWith('/quellen'));
             return (
-              <Link
-                key={href}
-                href={href}
-                className="px-4 py-1.5 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105"
-                style={{
-                  color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
-                  background: isActive ? 'var(--accent-muted)' : 'transparent',
-                }}
-                onMouseEnter={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.background = 'var(--bg-elevated)';
-                    e.currentTarget.style.color = 'var(--text-primary)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.background = 'transparent';
-                    e.currentTarget.style.color = 'var(--text-secondary)';
-                  }
-                }}
-              >
+              <Link key={href} href={href} className={`nav-link${isActive ? ' active' : ''}`}>
                 {label}
               </Link>
             );
@@ -73,41 +116,28 @@ export default function Header() {
         </nav>
 
         {/* Right side */}
-        <div className="flex items-center gap-2">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
-            onClick={() => {
-              document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }));
-            }}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs transition-all cursor-pointer hover:scale-105"
-            style={{
-              background: 'var(--bg-elevated)',
-              border: '1px solid var(--border-default)',
-              color: 'var(--text-muted)',
-            }}
-            title="Schnellsuche öffnen (Cmd+K)"
+            type="button"
+            className="palette-trigger hidden sm:inline-flex"
+            onClick={() =>
+              document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))
+            }
+            title="Schnellsuche öffnen (⌘K)"
+            aria-label="Schnellsuche öffnen"
           >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <kbd className="text-[10px] px-1 py-0.5 rounded" style={{ background: 'var(--bg-card)' }}>⌘K</kbd>
+            <kbd>⌘K</kbd>
           </button>
 
-          <button
-            onClick={toggle}
-            className="hidden sm:flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-200 shrink-0 hover:scale-110 cursor-pointer"
-            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)' }}
-            aria-label={theme === 'dark' ? 'Helles Design aktivieren' : 'Dunkles Design aktivieren'}
-          >
-            {theme === 'dark' ? (
-              <svg className="w-4 h-4" style={{ color: 'var(--accent-text)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
-            ) : (
-              <svg className="w-4 h-4" style={{ color: 'var(--accent-text)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-              </svg>
-            )}
-          </button>
+          <Button variant="ghost" disabled className="hidden sm:inline-flex">
+            Anmelden
+          </Button>
+          <Button variant="accent" href="/search">
+            Kostenlos starten
+          </Button>
         </div>
       </div>
     </header>

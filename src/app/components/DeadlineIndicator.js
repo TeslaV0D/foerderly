@@ -1,50 +1,53 @@
 'use client';
 
 /**
- * Deadline-Indikator: zeigt Antragsfrist visuell an.
- * Rot bei < 30 Tage, Gelb bei < 90 Tage, Grün bei "laufend".
+ * Parse antragsfrist (DD.MM.YYYY or "laufend") and return urgency status.
+ * Pure function — usable from both client and server contexts.
  */
-export default function DeadlineIndicator({ antragsfrist, hatDeadline, small = false }) {
-  if (!antragsfrist) return null;
+export function getDeadlineStatus(antragsfrist) {
+  if (!antragsfrist) return { urgency: 'none', daysLeft: null, isLaufend: false };
 
   const isLaufend = antragsfrist === 'laufend';
+  if (isLaufend) return { urgency: 'laufend', daysLeft: null, isLaufend: true };
 
-  // Versuche Datum zu parsen (DD.MM.YYYY)
-  let daysLeft = null;
-  let urgency = 'none'; // none | green | yellow | red
+  const parts = antragsfrist.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+  if (!parts) return { urgency: 'none', daysLeft: null, isLaufend: false };
 
-  if (!isLaufend) {
-    const parts = antragsfrist.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/);
-    if (parts) {
-      const deadline = new Date(parseInt(parts[3]), parseInt(parts[2]) - 1, parseInt(parts[1]));
-      const now = new Date();
-      daysLeft = Math.ceil((deadline - now) / (1000 * 60 * 60 * 24));
+  const deadline = new Date(parseInt(parts[3]), parseInt(parts[2]) - 1, parseInt(parts[1]));
+  const now = new Date();
+  const daysLeft = Math.ceil((deadline - now) / (1000 * 60 * 60 * 24));
 
-      if (daysLeft < 0) urgency = 'expired';
-      else if (daysLeft <= 30) urgency = 'red';
-      else if (daysLeft <= 90) urgency = 'yellow';
-      else urgency = 'green';
-    }
-  }
+  let urgency = 'green';
+  if (daysLeft < 0) urgency = 'expired';
+  else if (daysLeft <= 30) urgency = 'red';
+  else if (daysLeft <= 90) urgency = 'yellow';
 
-  const styles = {
-    expired: { background: 'rgba(239,68,68,0.1)', color: '#f87171' },
-    red: { background: 'rgba(239,68,68,0.1)', color: '#f87171' },
-    yellow: { background: 'rgba(251,191,36,0.1)', color: '#fbbf24' },
-    green: { background: 'rgba(52,211,153,0.1)', color: '#6ee7b7' },
-    none: { background: 'var(--bg-elevated)', color: 'var(--text-secondary)' },
-  };
+  return { urgency, daysLeft, isLaufend: false };
+}
 
-  const style = styles[urgency] || styles.none;
+const STYLES = {
+  expired: { background: 'color-mix(in oklch, oklch(0.65 0.22 25) 14%, transparent)', color: 'oklch(0.78 0.18 25)' },
+  red:     { background: 'color-mix(in oklch, oklch(0.65 0.22 25) 14%, transparent)', color: 'oklch(0.78 0.18 25)' },
+  yellow:  { background: 'color-mix(in oklch, oklch(0.78 0.16 80) 14%, transparent)', color: 'oklch(0.85 0.16 85)' },
+  green:   { background: 'color-mix(in oklch, var(--accent) 14%, transparent)',       color: 'var(--accent)' },
+  laufend: { background: 'color-mix(in oklch, var(--accent) 14%, transparent)',       color: 'var(--accent)' },
+  none:    { background: 'var(--bg3)', color: 'var(--muted)' },
+};
+
+export default function DeadlineIndicator({ antragsfrist, hatDeadline, small = false }) {
+  if (!antragsfrist) return null;
+  const { urgency, daysLeft, isLaufend } = getDeadlineStatus(antragsfrist);
+  const style = STYLES[urgency] || STYLES.none;
 
   if (small) {
-    if (!hatDeadline && isLaufend) return null;
     if (!hatDeadline) return null;
     return (
       <span className="text-[10px] px-2 py-0.5 rounded-md font-medium" style={style}>
-        {urgency === 'expired' ? '⏰ Abgelaufen' :
-         daysLeft !== null ? `📅 ${daysLeft}d` :
-         `📅 ${antragsfrist}`}
+        {urgency === 'expired'
+          ? '⏰ Abgelaufen'
+          : daysLeft !== null
+            ? `📅 ${daysLeft}d`
+            : `📅 ${antragsfrist}`}
       </span>
     );
   }

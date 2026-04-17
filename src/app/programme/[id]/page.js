@@ -1,8 +1,4 @@
 // src/app/programme/[id]/page.js
-// v6: Mobile layout reordered (Förderung + Kontakt above content),
-//     Originalquelle button styled with accent outline,
-//     Ähnliche Programme stays at bottom on mobile
-
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getProgrammeById, getSimilarProgrammes, getTopProgrammeIds } from '@/lib/search';
@@ -21,7 +17,7 @@ export const revalidate = 86400;
 export async function generateStaticParams() {
   try {
     const ids = await getTopProgrammeIds(100);
-    return ids.map(id => ({ id: String(id) }));
+    return ids.map((id) => ({ id: String(id) }));
   } catch {
     return [];
   }
@@ -36,7 +32,10 @@ export async function generateMetadata({ params }) {
     ? `${programme.kurzname} – ${programme.name}`
     : programme.name;
 
-  const desc = programme.description_short || programme.beschreibung?.slice(0, 160) || `Förderprogramm: ${programme.name}`;
+  const desc =
+    programme.description_short ||
+    programme.beschreibung?.slice(0, 160) ||
+    `Förderprogramm: ${programme.name}`;
 
   return {
     title,
@@ -51,6 +50,12 @@ export async function generateMetadata({ params }) {
   };
 }
 
+const VIOLET_FOERDERARTEN = new Set(['buergschaft', 'beteiligung']);
+
+function getAccentVar(foerderart) {
+  return VIOLET_FOERDERARTEN.has(foerderart) ? 'var(--accent2)' : 'var(--accent)';
+}
+
 export default async function ProgrammeDetailPage({ params }) {
   const { id } = await params;
   const programme = await getProgrammeById(id);
@@ -58,16 +63,35 @@ export default async function ProgrammeDetailPage({ params }) {
 
   const similar = await getSimilarProgrammes(programme, 6);
   const art = FOERDERARTEN[programme.foerderart] || FOERDERARTEN.zuschuss;
+  const accent = getAccentVar(programme.foerderart);
   const hasVolumen = programme.volumen_max_eur > 0;
   const pageUrl = `https://foerderly.com/programme/${programme.id}`;
-
-  // Vollbeschreibung: description_full > beschreibung
   const fullDescription = programme.description_full || programme.beschreibung;
 
   const breadcrumbs = [
     { name: 'Startseite', url: 'https://foerderly.com' },
     { name: 'Förderprogramme', url: 'https://foerderly.com/search' },
     { name: programme.kurzname || programme.name, url: pageUrl },
+  ];
+
+  const kenndaten = [
+    {
+      label: 'Förderbetrag',
+      value: hasVolumen ? `bis ${formatEuro(programme.volumen_max_eur)}` : '—',
+      accent: hasVolumen,
+    },
+    {
+      label: 'Förderquote',
+      value: programme.foerderquote ? `bis ${programme.foerderquote}%` : '—',
+    },
+    {
+      label: 'Eigenanteil',
+      value: programme.eigenanteil_prozent > 0 ? `${programme.eigenanteil_prozent}%` : '—',
+    },
+    {
+      label: 'Antragsfrist',
+      value: programme.antragsfrist || (programme.hat_deadline ? '—' : 'Laufend'),
+    },
   ];
 
   return (
@@ -77,106 +101,159 @@ export default async function ProgrammeDetailPage({ params }) {
       <Header />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-6">
-        <Link href="/search" className="inline-flex items-center gap-1.5 text-sm mb-6 transition-colors"
-          style={{ color: 'var(--text-muted)' }}>
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <Link href="/search" className="btn-ghost" style={{ marginBottom: 24 }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
           Zurück zur Suche
         </Link>
 
-        {/* ═══ HEADER ═══ */}
-        <div className="mb-6">
-          <div className="flex flex-wrap items-center gap-2 mb-3">
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium badge-${programme.foerderart}`}>
+        {/* ═══ TITLE BLOCK ═══ */}
+        <section style={{ marginBottom: 32 }}>
+          <div className="flex flex-wrap items-center" style={{ gap: 8, marginBottom: 18 }}>
+            <span
+              className="pill"
+              style={{
+                background: `color-mix(in oklch, ${accent} 14%, transparent)`,
+                borderColor: `color-mix(in oklch, ${accent} 35%, transparent)`,
+                color: accent,
+              }}
+            >
               {art.emoji} {art.label}
             </span>
             <DeadlineIndicator antragsfrist={programme.antragsfrist} hatDeadline={programme.hat_deadline} />
           </div>
 
           {programme.kurzname && programme.kurzname !== programme.name && (
-            <p className="text-sm font-semibold mb-1 gradient-text">{programme.kurzname}</p>
+            <p
+              className="gradient-text"
+              style={{ fontSize: 14, fontWeight: 700, marginBottom: 10, letterSpacing: '0.02em' }}
+            >
+              {programme.kurzname}
+            </p>
           )}
-          <h1 className="text-2xl sm:text-3xl font-bold leading-tight mb-2" style={{ color: 'var(--text-primary)' }}>
+
+          <h1
+            style={{
+              fontSize: 'clamp(32px, 4.5vw, 44px)',
+              fontWeight: 800,
+              letterSpacing: '-1.5px',
+              lineHeight: 1.05,
+              color: 'var(--text)',
+              marginBottom: 14,
+            }}
+          >
             {programme.name}
           </h1>
-          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{programme.foerdergeber}</p>
 
-          <div className="flex items-center gap-3 mt-3">
+          <p style={{ fontSize: 15, color: 'var(--muted)' }}>{programme.foerdergeber}</p>
+
+          <div className="flex items-center" style={{ gap: 14, marginTop: 18 }}>
             <ShareButtons url={pageUrl} title={programme.name} />
             <FreshnessIndicator date={programme.aktualisiert_am} />
           </div>
-        </div>
+        </section>
 
-        {/* ═══ MOBILE: Förderung + Kontakt OBEN (nur < lg) ═══ */}
-        <div className="lg:hidden space-y-4 mb-6">
-          {/* Förderhöhe Box */}
-          {hasVolumen && (
-            <div className="rounded-2xl p-5" style={{ background: 'var(--accent-muted)', border: '1px solid rgba(52,211,153,0.15)' }}>
-              <p className="text-xs font-medium mb-1" style={{ color: 'var(--accent-text)' }}>Förderhöhe</p>
-              <p className="text-2xl font-bold" style={{ color: 'var(--accent-text)' }}>
-                bis zu {formatEuro(programme.volumen_max_eur)}
-              </p>
-              <div className="flex flex-col gap-1 mt-2">
-                {programme.foerderquote && (
-                  <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                    Förderquote: bis {programme.foerderquote}%
-                  </p>
-                )}
-                {programme.eigenanteil_prozent > 0 && (
-                  <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                    Eigenanteil: {programme.eigenanteil_prozent}%
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Action Buttons (mobile) */}
-          <div className="rounded-2xl p-5 space-y-3" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)' }}>
-            {programme.url_antrag && (
-              <a href={programme.url_antrag} target="_blank" rel="noopener noreferrer"
-                className="block w-full text-center px-4 py-3 text-sm font-medium rounded-xl transition-all"
-                style={{ background: 'linear-gradient(135deg, var(--accent-start), var(--accent-end))', color: '#0f0f13' }}>
-                Zum Antrag →
-              </a>
-            )}
-            {programme.url_quelle && (
-              <a href={programme.url_quelle} target="_blank" rel="noopener noreferrer"
-                className="block w-full text-center px-4 py-3 text-sm font-medium rounded-xl transition-all hover:opacity-90"
+        {/* ═══ KENNDATEN GRID (2x2) ═══ */}
+        <section
+          style={{
+            display: 'grid',
+            gap: 14,
+            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            marginBottom: 32,
+          }}
+        >
+          {kenndaten.map((k) => (
+            <div
+              key={k.label}
+              style={{
+                background: 'var(--bg2)',
+                border: '1.5px solid var(--border2)',
+                borderRadius: 'var(--radius)',
+                padding: 20,
+              }}
+            >
+              <p
                 style={{
-                  background: 'transparent',
-                  border: '1px solid var(--accent-solid)',
-                  color: 'var(--accent-text)',
-                }}>
-                Originalquelle ↗
-              </a>
-            )}
-          </div>
+                  fontSize: 11,
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  color: 'var(--muted)',
+                  marginBottom: 8,
+                }}
+              >
+                {k.label}
+              </p>
+              <p
+                style={{
+                  fontSize: 22,
+                  fontWeight: 700,
+                  letterSpacing: '-0.5px',
+                  color: k.accent ? accent : 'var(--text)',
+                  lineHeight: 1.15,
+                }}
+              >
+                {k.value}
+              </p>
+            </div>
+          ))}
+        </section>
 
-          {/* Kontakt-Widget (mobile) */}
+        {/* ═══ MOBILE: Action + Kontakt OBEN ═══ */}
+        <div className="lg:hidden space-y-4" style={{ marginBottom: 24 }}>
+          <ActionCard programme={programme} accent={accent} />
           <ContactWidget kontakte={programme.kontakte} />
         </div>
 
-        {/* ═══ 2-COLUMN LAYOUT: Content links, Sidebar rechts ═══ */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* ═══ 2-COLUMN LAYOUT ═══ */}
+        <div className="grid grid-cols-1 lg:grid-cols-3" style={{ gap: 24 }}>
+          {/* ── LEFT (2/3) ── */}
+          <div className="lg:col-span-2" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            {/* Beschreibung */}
+            {fullDescription && (
+              <section
+                style={{
+                  background: 'var(--bg2)',
+                  border: '1.5px solid var(--border2)',
+                  borderRadius: 'var(--radius)',
+                  padding: 28,
+                }}
+              >
+                <h2
+                  style={{
+                    fontSize: 18,
+                    fontWeight: 700,
+                    letterSpacing: '-0.4px',
+                    color: 'var(--text)',
+                    marginBottom: 16,
+                  }}
+                >
+                  Beschreibung
+                </h2>
+                <p
+                  style={{
+                    fontSize: 15,
+                    fontWeight: 300,
+                    lineHeight: 1.7,
+                    color: 'var(--muted)',
+                    whiteSpace: 'pre-line',
+                  }}
+                >
+                  {fullDescription}
+                </p>
+              </section>
+            )}
 
-          {/* ── LEFT COLUMN (2/3) ── */}
-          <div className="lg:col-span-2 space-y-6">
+            <TagGroup title="Zielgruppen" items={programme.zielgruppen_erweitert || []} accent="var(--accent)" />
 
-            {/* 1. Zielgruppen (Badges, oben) */}
-            <TagGroup title="Zielgruppen"
-              items={programme.zielgruppen_erweitert || []}
-              colorStyle={{ background: 'rgba(96,165,250,0.1)', color: '#93c5fd' }} />
-
-            {/* 2. Besonderheiten (oben) */}
             {(programme.besonderheiten || []).length > 0 && (
               <section>
-                <h2 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Besonderheiten & Hinweise</h2>
-                <div className="space-y-1.5">
+                <SectionHeading>Besonderheiten & Hinweise</SectionHeading>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {(programme.besonderheiten || []).map((item, i) => (
-                    <div key={i} className="flex gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                      <span style={{ color: 'var(--accent-text)' }}>•</span>
+                    <div key={i} style={{ display: 'flex', gap: 10, fontSize: 14, color: 'var(--muted)' }}>
+                      <span style={{ color: accent, fontWeight: 700 }}>•</span>
                       <span>{item}</span>
                     </div>
                   ))}
@@ -184,140 +261,69 @@ export default async function ProgrammeDetailPage({ params }) {
               </section>
             )}
 
-            {/* 3. Details-Grid (flat) */}
-            <section>
-              <h2 className="text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Details</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                <InfoCard label="Förderart" value={`${art.emoji} ${art.label}`} />
-                {programme.eigenanteil_prozent > 0 && (
-                  <InfoCard label="Eigenanteil" value={`${programme.eigenanteil_prozent}%`} />
+            <div className="grid grid-cols-1 sm:grid-cols-2" style={{ gap: 20 }}>
+              <TagGroup
+                title="Fördergebiet"
+                items={(programme.bundeslaender || []).map((bl) =>
+                  bl === 'BUND' ? 'Bundesweit' : BUNDESLAENDER[bl] || bl
                 )}
-                {programme.foerderquote && (
-                  <InfoCard label="Förderquote" value={`bis ${programme.foerderquote}%`} />
-                )}
-                {programme.bearbeitungszeit && (
-                  <InfoCard label="Bearbeitungszeit" value={programme.bearbeitungszeit} />
-                )}
-                {programme.antragsfrist && (
-                  <InfoCard label="Antragsfrist" value={programme.antragsfrist} />
-                )}
-              </div>
-            </section>
-
-            {/* 4. Tags: Fördergebiet, Phasen, Größen, Finanzierung */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <TagGroup title="Fördergebiet"
-                items={(programme.bundeslaender || []).map(bl => bl === 'BUND' ? 'Bundesweit' : (BUNDESLAENDER[bl] || bl))}
-                colorStyle={{ background: 'var(--violet-muted)', color: 'var(--violet-accent)' }} />
-              <TagGroup title="Geeignete Phasen"
-                items={(programme.phasen || []).map(ph => PHASEN[ph] || ph)}
-                colorStyle={{ background: 'rgba(251,191,36,0.1)', color: '#fbbf24' }} />
-              <TagGroup title="Unternehmensgrößen"
-                items={(programme.groessen || []).map(gr => GROESSEN[gr] || gr)}
-                colorStyle={{ background: 'rgba(244,114,182,0.1)', color: '#f472b6' }} />
-              <TagGroup title="Finanzierungsform"
+                accent="var(--accent2)"
+              />
+              <TagGroup
+                title="Geeignete Phasen"
+                items={(programme.phasen || []).map((ph) => PHASEN[ph] || ph)}
+                accent="var(--accent)"
+              />
+              <TagGroup
+                title="Unternehmensgrößen"
+                items={(programme.groessen || []).map((gr) => GROESSEN[gr] || gr)}
+                accent="var(--accent2)"
+              />
+              <TagGroup
+                title="Finanzierungsform"
                 items={programme.finanzierungsform_erweitert || []}
-                colorStyle={{ background: 'rgba(167,139,250,0.1)', color: '#c4b5fd' }} />
+                accent="var(--accent)"
+              />
             </div>
 
-            {/* 5. Branchen (MITTIG, volle Breite im Content-Bereich) */}
-            <TagGroup title="Branchen"
-              items={(programme.branchen || []).map(br => br.name)}
-              colorStyle={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)' }} />
+            <TagGroup title="Branchen" items={(programme.branchen || []).map((br) => br.name)} />
 
-            {/* 6. Beschreibung (VOLLSTÄNDIG, GRÖßERE Schrift: text-base statt text-sm) */}
-            {fullDescription && (
-              <section>
-                <h2 className="text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Beschreibung</h2>
-                <div className="rounded-xl p-4 sm:p-5" style={{ background: 'var(--bg-elevated)' }}>
-                  <p className="text-base leading-7 whitespace-pre-line" style={{ color: 'var(--text-secondary)' }}>
-                    {fullDescription}
-                  </p>
-                </div>
-              </section>
-            )}
-
-            {/* 7. Rechtsgrundlagen */}
             {(programme.rechtsgrundlagen || []).length > 0 && (
               <section>
-                <h2 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Rechtsgrundlagen</h2>
-                <div className="space-y-1">
+                <SectionHeading>Rechtsgrundlagen</SectionHeading>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {(programme.rechtsgrundlagen || []).map((rg, i) => (
-                    <p key={i} className="text-sm" style={{ color: 'var(--text-secondary)' }}>{rg}</p>
+                    <p key={i} style={{ fontSize: 14, color: 'var(--muted)' }}>
+                      {rg}
+                    </p>
                   ))}
                 </div>
               </section>
             )}
           </div>
 
-          {/* ── RIGHT SIDEBAR (1/3, sticky) – only visible on desktop ── */}
+          {/* ── RIGHT SIDEBAR (1/3, sticky) ── */}
           <div className="hidden lg:block lg:col-span-1">
             <div
-              className="sticky space-y-4"
+              className="sticky"
               style={{
-                top: 'calc(var(--header-height, 57px) + 1.5rem)',
-                maxHeight: 'calc(100vh - var(--header-height, 57px) - 3rem)',
+                top: 'calc(var(--header-height, 64px) + 1.5rem)',
+                maxHeight: 'calc(100vh - var(--header-height, 64px) - 3rem)',
                 overflowY: 'auto',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 16,
               }}
             >
-              {/* Förderhöhe Box */}
-              {hasVolumen && (
-                <div className="rounded-2xl p-5" style={{ background: 'var(--accent-muted)', border: '1px solid rgba(52,211,153,0.15)' }}>
-                  <p className="text-xs font-medium mb-1" style={{ color: 'var(--accent-text)' }}>Förderhöhe</p>
-                  <p className="text-2xl font-bold" style={{ color: 'var(--accent-text)' }}>
-                    bis zu {formatEuro(programme.volumen_max_eur)}
-                  </p>
-                  <div className="flex flex-col gap-1 mt-2">
-                    {programme.foerderquote && (
-                      <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                        Förderquote: bis {programme.foerderquote}%
-                      </p>
-                    )}
-                    {programme.eigenanteil_prozent > 0 && (
-                      <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                        Eigenanteil: {programme.eigenanteil_prozent}%
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Action Buttons (desktop) */}
-              <div className="rounded-2xl p-5 space-y-3" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)' }}>
-                {programme.url_antrag && (
-                  <a href={programme.url_antrag} target="_blank" rel="noopener noreferrer"
-                    className="block w-full text-center px-4 py-3 text-sm font-medium rounded-xl transition-all"
-                    style={{ background: 'linear-gradient(135deg, var(--accent-start), var(--accent-end))', color: '#0f0f13' }}>
-                    Zum Antrag →
-                  </a>
-                )}
-                {programme.url_quelle && (
-                  <a href={programme.url_quelle} target="_blank" rel="noopener noreferrer"
-                    className="block w-full text-center px-4 py-3 text-sm font-medium rounded-xl transition-all hover:opacity-90"
-                    style={{
-                      background: 'transparent',
-                      border: '1px solid var(--accent-solid)',
-                      color: 'var(--accent-text)',
-                    }}>
-                    Originalquelle ↗
-                  </a>
-                )}
-              </div>
-
-              {/* Kontakt-Widget (desktop) */}
+              <ActionCard programme={programme} accent={accent} />
               <ContactWidget kontakte={programme.kontakte} />
-
-              {/* Ähnliche Programme (desktop) */}
-              {similar?.length > 0 && (
-                <SimilarSection similar={similar} programme={programme} />
-              )}
+              {similar?.length > 0 && <SimilarSection similar={similar} programme={programme} />}
             </div>
           </div>
         </div>
 
-        {/* ═══ MOBILE: Ähnliche Programme ganz unten (nur < lg) ═══ */}
         {similar?.length > 0 && (
-          <div className="lg:hidden mt-6">
+          <div className="lg:hidden" style={{ marginTop: 24 }}>
             <SimilarSection similar={similar} programme={programme} />
           </div>
         )}
@@ -328,61 +334,150 @@ export default async function ProgrammeDetailPage({ params }) {
   );
 }
 
+function SectionHeading({ children }) {
+  return (
+    <h2
+      style={{
+        fontSize: 11,
+        fontWeight: 600,
+        textTransform: 'uppercase',
+        letterSpacing: '0.08em',
+        color: 'var(--muted)',
+        marginBottom: 12,
+      }}
+    >
+      {children}
+    </h2>
+  );
+}
+
+function ActionCard({ programme, accent }) {
+  if (!programme.url_antrag && !programme.url_quelle) return null;
+  return (
+    <div
+      style={{
+        background: 'var(--bg2)',
+        border: '1.5px solid var(--border2)',
+        borderRadius: 'var(--radius)',
+        padding: 20,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 10,
+      }}
+    >
+      {programme.url_antrag && (
+        <a
+          href={programme.url_antrag}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-accent"
+          style={{ width: '100%', justifyContent: 'center' }}
+        >
+          Zum Antrag →
+        </a>
+      )}
+      {programme.url_quelle && (
+        <a
+          href={programme.url_quelle}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-ghost"
+          style={{ width: '100%', justifyContent: 'center', color: accent, borderColor: `color-mix(in oklch, ${accent} 35%, transparent)` }}
+        >
+          Originalquelle ↗
+        </a>
+      )}
+    </div>
+  );
+}
+
 function SimilarSection({ similar, programme }) {
   return (
-    <div className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)' }}>
-      <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>
-        Ähnliche Programme
-      </h3>
-      <div className="space-y-3">
-        {similar.filter(p => p.id !== programme.id).slice(0, 4).map(prog => {
-          const simArt = FOERDERARTEN[prog.foerderart] || FOERDERARTEN.zuschuss;
-          return (
-            <Link key={prog.id} href={`/programme/${prog.id}`}
-              className="block rounded-xl p-3 transition-all"
-              style={{ background: 'var(--bg-elevated)' }}>
-              <div className="flex items-start justify-between gap-2 mb-1">
-                <span className={`text-[10px] px-2 py-0.5 rounded-md font-medium badge-${prog.foerderart}`}>
-                  {simArt.emoji} {simArt.label}
-                </span>
-                {prog.volumen_max_eur > 0 && (
-                  <span className="text-[10px] font-semibold" style={{ color: 'var(--accent-text)' }}>
-                    bis zu {formatEuro(prog.volumen_max_eur)}
+    <div
+      style={{
+        background: 'var(--bg2)',
+        border: '1.5px solid var(--border2)',
+        borderRadius: 'var(--radius)',
+        padding: 20,
+      }}
+    >
+      <SectionHeading>Ähnliche Programme</SectionHeading>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {similar
+          .filter((p) => p.id !== programme.id)
+          .slice(0, 4)
+          .map((prog) => {
+            const simArt = FOERDERARTEN[prog.foerderart] || FOERDERARTEN.zuschuss;
+            const simAccent = VIOLET_FOERDERARTEN.has(prog.foerderart) ? 'var(--accent2)' : 'var(--accent)';
+            return (
+              <Link
+                key={prog.id}
+                href={`/programme/${prog.id}`}
+                style={{
+                  display: 'block',
+                  background: 'var(--bg3)',
+                  border: '1px solid var(--border2)',
+                  borderRadius: 12,
+                  padding: 12,
+                  textDecoration: 'none',
+                  transition: 'border-color 0.2s, transform 0.2s',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 600,
+                      padding: '2px 8px',
+                      borderRadius: 100,
+                      background: `color-mix(in oklch, ${simAccent} 14%, transparent)`,
+                      color: simAccent,
+                    }}
+                  >
+                    {simArt.emoji} {simArt.label}
                   </span>
-                )}
-              </div>
-              <p className="text-xs font-medium line-clamp-2 mt-1" style={{ color: 'var(--text-primary)' }}>
-                {prog.kurzname || prog.name}
-              </p>
-              <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                {prog.foerdergeber}
-              </p>
-            </Link>
-          );
-        })}
+                  {prog.volumen_max_eur > 0 && (
+                    <span style={{ fontSize: 11, fontWeight: 700, color: simAccent, whiteSpace: 'nowrap' }}>
+                      bis {formatEuro(prog.volumen_max_eur)}
+                    </span>
+                  )}
+                </div>
+                <p
+                  className="line-clamp-2"
+                  style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}
+                >
+                  {prog.kurzname || prog.name}
+                </p>
+                <p style={{ fontSize: 11, color: 'var(--muted)' }}>{prog.foerdergeber}</p>
+              </Link>
+            );
+          })}
       </div>
     </div>
   );
 }
 
-function InfoCard({ label, value }) {
-  return (
-    <div className="rounded-xl p-3" style={{ background: 'var(--bg-elevated)' }}>
-      <p className="text-[11px] mb-0.5" style={{ color: 'var(--text-muted)' }}>{label}</p>
-      <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{value}</p>
-    </div>
-  );
-}
-
-function TagGroup({ title, items, colorStyle }) {
+function TagGroup({ title, items, accent = 'var(--accent)' }) {
   const safeItems = Array.isArray(items) ? items : [];
   if (!safeItems.length) return null;
   return (
     <div>
-      <h3 className="text-sm font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>{title}</h3>
-      <div className="flex flex-wrap gap-1.5">
+      <SectionHeading>{title}</SectionHeading>
+      <div className="flex flex-wrap" style={{ gap: 6 }}>
         {safeItems.map((item, i) => (
-          <span key={i} className="text-xs px-2.5 py-1 rounded-lg font-medium capitalize" style={colorStyle}>
+          <span
+            key={i}
+            style={{
+              fontSize: 12,
+              fontWeight: 500,
+              padding: '5px 10px',
+              borderRadius: 100,
+              background: `color-mix(in oklch, ${accent} 10%, transparent)`,
+              border: `1px solid color-mix(in oklch, ${accent} 22%, transparent)`,
+              color: accent,
+              textTransform: 'capitalize',
+            }}
+          >
             {item}
           </span>
         ))}
