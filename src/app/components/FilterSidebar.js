@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { BUNDESLAENDER, PHASEN, GROESSEN, FOERDERARTEN, BRANCHEN_OPTIONS } from '@/lib/constants';
+import Select from './Select';
 
 const STICKY_TOP = 73;
 
@@ -58,10 +59,6 @@ export default function FilterSidebar({ currentFilters, total }) {
     .filter(([k, v]) => v && !['q', 'sortBy', 'sortDir', 'datenqualitaet', 'page'].includes(k))
     .length;
 
-  const sortValue = currentFilters.sortBy && currentFilters.sortDir
-    ? `${currentFilters.sortBy}_${currentFilters.sortDir}`
-    : '';
-
   const panelBody = (
     <>
       <form onSubmit={handleSearch}>
@@ -84,24 +81,6 @@ export default function FilterSidebar({ currentFilters, total }) {
           </button>
         </div>
       </form>
-
-      <FilterGroup>
-        <Label>Sortierung</Label>
-        <Select
-          value={sortValue}
-          onChange={(v) => {
-            const [sortBy, sortDir] = v ? v.split('_') : ['', ''];
-            applyFilters({ sortBy, sortDir });
-          }}
-          options={[
-            { value: '', label: 'Standard' },
-            { value: 'volumen_desc', label: 'Höchste Förderung' },
-            { value: 'volumen_asc', label: 'Niedrigste Förderung' },
-            { value: 'name_asc', label: 'Name A–Z' },
-            { value: 'aktualisiert_desc', label: 'Neueste zuerst' },
-          ]}
-        />
-      </FilterGroup>
 
       <FilterGroup>
         <Label>Förderart</Label>
@@ -219,7 +198,7 @@ export default function FilterSidebar({ currentFilters, total }) {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 4 }}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
           </svg>
-          Filter & Sortierung{activeCount > 0 ? ` (${activeCount})` : ''}
+          Filter{activeCount > 0 ? ` (${activeCount})` : ''}
           {typeof total === 'number' && (
             <span style={{ marginLeft: 'auto', color: 'var(--muted)', fontSize: 12 }}>{total} Treffer</span>
           )}
@@ -262,7 +241,17 @@ export default function FilterSidebar({ currentFilters, total }) {
 
       <style>{`
         .filter-sidebar-desktop { display: none; }
-        .filter-sidebar-mobile-trigger { display: block; margin-bottom: 16px; }
+        .filter-sidebar-mobile-trigger {
+          display: block;
+          margin-bottom: 16px;
+          position: sticky;
+          top: var(--header-height, 57px);
+          z-index: 30;
+          padding: 8px 0;
+          background: color-mix(in oklch, var(--bg) 92%, transparent);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+        }
         @media (min-width: 1024px) {
           .filter-sidebar-desktop { display: block; }
           .filter-sidebar-mobile-trigger { display: none; }
@@ -394,23 +383,3 @@ function Label({ children, style }) {
   );
 }
 
-function Select({ value, options, onChange }) {
-  return (
-    <select
-      value={value || ''}
-      onChange={(e) => onChange(e.target.value)}
-      style={{
-        width: '100%',
-        padding: '10px 12px',
-        fontSize: 13,
-        cursor: 'pointer',
-      }}
-    >
-      {options.map((opt) => (
-        <option key={opt.value} value={opt.value}>
-          {opt.label}
-        </option>
-      ))}
-    </select>
-  );
-}

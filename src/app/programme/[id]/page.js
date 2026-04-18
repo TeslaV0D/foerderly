@@ -210,56 +210,8 @@ export default async function ProgrammeDetailPage({ params }) {
         <div className="grid grid-cols-1 lg:grid-cols-3" style={{ gap: 24 }}>
           {/* ── LEFT (2/3) ── */}
           <div className="lg:col-span-2" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-            {/* Beschreibung */}
-            {fullDescription && (
-              <section
-                style={{
-                  background: 'var(--bg2)',
-                  border: '1.5px solid var(--border2)',
-                  borderRadius: 'var(--radius)',
-                  padding: 28,
-                }}
-              >
-                <h2
-                  style={{
-                    fontSize: 18,
-                    fontWeight: 700,
-                    letterSpacing: '-0.4px',
-                    color: 'var(--text)',
-                    marginBottom: 16,
-                  }}
-                >
-                  Beschreibung
-                </h2>
-                <p
-                  style={{
-                    fontSize: 15,
-                    fontWeight: 300,
-                    lineHeight: 1.7,
-                    color: 'var(--muted)',
-                    whiteSpace: 'pre-line',
-                  }}
-                >
-                  {fullDescription}
-                </p>
-              </section>
-            )}
-
+            {/* ═══ Klassifikations-Block (oben) ═══ */}
             <TagGroup title="Zielgruppen" items={programme.zielgruppen_erweitert || []} accent="var(--accent)" />
-
-            {(programme.besonderheiten || []).length > 0 && (
-              <section>
-                <SectionHeading>Besonderheiten & Hinweise</SectionHeading>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {(programme.besonderheiten || []).map((item, i) => (
-                    <div key={i} style={{ display: 'flex', gap: 10, fontSize: 14, color: 'var(--muted)' }}>
-                      <span style={{ color: accent, fontWeight: 700 }}>•</span>
-                      <span>{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2" style={{ gap: 20 }}>
               <TagGroup
@@ -288,6 +240,56 @@ export default async function ProgrammeDetailPage({ params }) {
 
             <TagGroup title="Branchen" items={(programme.branchen || []).map((br) => br.name)} />
 
+            {/* ═══ Beschreibung ═══ */}
+            {fullDescription && (
+              <section
+                style={{
+                  background: 'var(--bg2)',
+                  border: '1.5px solid var(--border2)',
+                  borderRadius: 'var(--radius)',
+                  padding: 28,
+                }}
+              >
+                <h2
+                  style={{
+                    fontSize: 18,
+                    fontWeight: 700,
+                    letterSpacing: '-0.4px',
+                    color: 'var(--text)',
+                    marginBottom: 16,
+                  }}
+                >
+                  Beschreibung
+                </h2>
+                <p
+                  className="text-body"
+                  style={{
+                    fontSize: 15,
+                    fontWeight: 400,
+                    whiteSpace: 'pre-line',
+                  }}
+                >
+                  {fullDescription}
+                </p>
+              </section>
+            )}
+
+            {/* ═══ Besonderheiten & Hinweise ═══ */}
+            {(programme.besonderheiten || []).length > 0 && (
+              <section>
+                <SectionHeading>Besonderheiten & Hinweise</SectionHeading>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {(programme.besonderheiten || []).map((item, i) => (
+                    <div key={i} className="text-body" style={{ display: 'flex', gap: 10, fontSize: 14 }}>
+                      <span style={{ color: accent, fontWeight: 700 }}>•</span>
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* ═══ Rechtsgrundlagen (ganz unten) ═══ */}
             {(programme.rechtsgrundlagen || []).length > 0 && (
               <section>
                 <SectionHeading>Rechtsgrundlagen</SectionHeading>

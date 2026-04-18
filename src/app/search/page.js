@@ -6,6 +6,8 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import FilterSidebar from '../components/FilterSidebar';
 import ResultCard from '../components/ResultCard';
+import SortToolbar from '../components/SortToolbar';
+import ActiveFilterChips from '../components/ActiveFilterChips';
 
 export const dynamic = 'force-dynamic';
 
@@ -88,15 +90,8 @@ export default async function SearchPage({ searchParams }) {
         <FilterSidebar currentFilters={filters} total={total} />
 
         <div className="search-main">
-          <div className="flex items-center justify-between mb-5">
-            <p style={{ fontSize: 14, color: 'var(--muted)' }}>
-              <span style={{ fontWeight: 700, color: 'var(--text)' }}>{total}</span>
-              {' '}Programm{total !== 1 ? 'e' : ''}
-              {totalPages > 1 && (
-                <span style={{ color: 'var(--muted)' }}> · Seite {page}/{totalPages}</span>
-              )}
-            </p>
-          </div>
+          <ActiveFilterChips />
+          <SortToolbar total={total} currentPage={page} totalPages={totalPages} />
 
           {ergebnisse.length > 0 ? (
             <div

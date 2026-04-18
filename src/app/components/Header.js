@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 const NAV_LINKS = [
   { href: '/', label: 'Entdecken' },
@@ -11,6 +12,30 @@ const NAV_LINKS = [
 
 export default function Header() {
   const pathname = usePathname();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e) => { if (e.key === 'Escape') setMenuOpen(false); };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [menuOpen]);
+
+  const isLinkActive = (href) => {
+    if (href === '/') return pathname === '/';
+    if (href === '/search') return pathname.startsWith('/search');
+    if (href === '/quellen') return pathname.startsWith('/quellen');
+    return pathname === href;
+  };
 
   return (
     <header
@@ -70,6 +95,78 @@ export default function Header() {
           font-family: inherit;
           color: var(--muted);
         }
+
+        .hamburger-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 40px;
+          height: 40px;
+          border-radius: 10px;
+          background: var(--bg3);
+          border: 1px solid var(--border2);
+          color: var(--text);
+          cursor: pointer;
+          transition: border-color 0.18s, background 0.18s;
+        }
+        .hamburger-btn:hover { border-color: var(--border); }
+
+        .mobile-menu-backdrop {
+          position: fixed;
+          inset: 0;
+          background: color-mix(in oklch, var(--bg) 70%, transparent);
+          backdrop-filter: blur(4px);
+          -webkit-backdrop-filter: blur(4px);
+          z-index: 45;
+          animation: fadeIn 0.18s ease-out;
+        }
+        .mobile-menu-panel {
+          position: fixed;
+          left: 0;
+          right: 0;
+          top: var(--header-height);
+          z-index: 46;
+          background: var(--bg2);
+          border-bottom: 1px solid var(--border2);
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          animation: slideDown 0.2s cubic-bezier(0.4,0,0.2,1);
+        }
+        .mobile-menu-panel .nav-link {
+          padding: 14px 16px;
+          font-size: 16px;
+        }
+        .mobile-menu-search {
+          margin-top: 8px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          padding: 14px 16px;
+          border-radius: 10px;
+          background: var(--bg3);
+          border: 1px solid var(--border2);
+          color: var(--text);
+          font-size: 14px;
+          font-weight: 500;
+          text-decoration: none;
+        }
+        .mobile-menu-search:hover { border-color: var(--border); }
+        @keyframes slideDown {
+          from { transform: translateY(-8px); opacity: 0; }
+          to   { transform: translateY(0);    opacity: 1; }
+        }
+
+        /* Desktop-only: show nav + palette trigger; hide hamburger */
+        @media (min-width: 768px) {
+          .mobile-only { display: none !important; }
+        }
+        /* Mobile-only: hide nav + palette trigger */
+        @media (max-width: 767.98px) {
+          .desktop-only { display: none !important; }
+        }
       `}</style>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex items-center gap-4">
@@ -100,25 +197,23 @@ export default function Header() {
           </span>
         </Link>
 
-        {/* Nav */}
-        <nav style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-          {NAV_LINKS.map(({ href, label }) => {
-            const isActive = href === '/'
-              ? pathname === '/'
-              : pathname === href || (href === '/search' && pathname.startsWith('/search')) || (href === '/quellen' && pathname.startsWith('/quellen'));
-            return (
-              <Link key={href} href={href} className={`nav-link${isActive ? ' active' : ''}`}>
-                {label}
-              </Link>
-            );
-          })}
+        {/* Nav — desktop only */}
+        <nav className="desktop-only" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+          {NAV_LINKS.map(({ href, label }) => (
+            <Link key={href} href={href} className={`nav-link${isLinkActive(href) ? ' active' : ''}`}>
+              {label}
+            </Link>
+          ))}
         </nav>
+
+        {/* Spacer for mobile to push hamburger right */}
+        <div className="mobile-only" style={{ flex: 1 }} />
 
         {/* Right side */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
             type="button"
-            className="palette-trigger hidden sm:inline-flex"
+            className="palette-trigger desktop-only"
             onClick={() =>
               document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))
             }
@@ -130,8 +225,58 @@ export default function Header() {
             </svg>
             <kbd>Strg+K</kbd>
           </button>
+
+          <button
+            type="button"
+            className="hamburger-btn mobile-only"
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-label={menuOpen ? 'Menü schließen' : 'Menü öffnen'}
+            aria-expanded={menuOpen}
+          >
+            {menuOpen ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            )}
+          </button>
         </div>
       </div>
+
+      {menuOpen && (
+        <>
+          <div
+            className="mobile-menu-backdrop mobile-only"
+            onClick={() => setMenuOpen(false)}
+            aria-hidden="true"
+          />
+          <div className="mobile-menu-panel mobile-only" role="dialog" aria-label="Hauptmenü">
+            {NAV_LINKS.map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className={`nav-link${isLinkActive(href) ? ' active' : ''}`}
+                onClick={() => setMenuOpen(false)}
+              >
+                {label}
+              </Link>
+            ))}
+            <Link
+              href="/search"
+              className="mobile-menu-search"
+              onClick={() => setMenuOpen(false)}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              Suchen
+            </Link>
+          </div>
+        </>
+      )}
     </header>
   );
 }

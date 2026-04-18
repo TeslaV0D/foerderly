@@ -209,8 +209,8 @@ export default function ResultCard({ programme, programm, index = 0 }) {
       <div style={{ flexGrow: 1, marginTop: 12 }}>
         {description ? (
           <p
-            className="line-clamp-2"
-            style={{ fontSize: 14, fontWeight: 300, color: 'var(--muted)', lineHeight: 1.55 }}
+            className="line-clamp-2 text-body"
+            style={{ fontSize: 14, fontWeight: 400 }}
           >
             {description}
           </p>
