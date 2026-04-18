@@ -160,7 +160,7 @@ export default function LandingClient({ recommended = [] }) {
                   marginRight: 4,
                 }}
               >
-                ⌘K
+                Strg+K
               </span>
               <button type="submit" className="btn-accent">
                 Suchen

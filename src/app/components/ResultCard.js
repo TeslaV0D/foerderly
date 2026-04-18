@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { BUNDESLAENDER, FOERDERARTEN, formatEuro } from '@/lib/constants';
-import { getDeadlineStatus } from './DeadlineIndicator';
+import { getDeadlineStatus } from '@/lib/deadline';
 
 const ACCENT_BY_FOERDERART = {
   zuschuss: 'green',

@@ -5,6 +5,22 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
+const kbdStyle = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  minWidth: 22,
+  padding: '2px 6px',
+  borderRadius: 6,
+  background: 'var(--bg3)',
+  border: '1px solid var(--border)',
+  color: 'var(--text)',
+  fontSize: 11,
+  fontFamily: 'inherit',
+  fontWeight: 600,
+  lineHeight: 1,
+};
+
 export default function CommandPalette() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -112,8 +128,16 @@ export default function CommandPalette() {
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Förderprogramm suchen..."
-            className="flex-1 bg-transparent text-base outline-none w-full"
-            style={{ color: 'var(--text-primary)', fontSize: '16px' }}
+            className="flex-1 bg-transparent text-base outline-none"
+            style={{
+              color: 'var(--text-primary)',
+              fontSize: '16px',
+              minWidth: 0,
+              width: '100%',
+              padding: '2px 4px',
+              border: 'none',
+              boxShadow: 'none',
+            }}
           />
           <kbd
             className="text-xs px-2.5 py-1 rounded-lg shrink-0 font-medium"
@@ -183,14 +207,27 @@ export default function CommandPalette() {
           )}
         </div>
 
-        {/* Footer – Fix 1: Größere Shortcut-Texte */}
+        {/* Footer – Navigationshinweise mit lesbarem Kontrast */}
         <div
-          className="px-6 py-3 flex items-center gap-6 text-xs"
-          style={{ borderTop: '1px solid var(--border-default)', color: 'var(--text-muted)' }}
+          className="px-6 py-3 flex items-center flex-wrap gap-x-5 gap-y-2 text-xs"
+          style={{
+            borderTop: '1px solid var(--border)',
+            background: 'var(--bg2)',
+            color: 'var(--text)',
+          }}
         >
-          <span>↑↓ navigieren</span>
-          <span>↵ öffnen</span>
-          <span>esc schließen</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <kbd style={kbdStyle}>↑↓</kbd>
+            <span style={{ color: 'var(--muted)' }}>navigieren</span>
+          </span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <kbd style={kbdStyle}>↵</kbd>
+            <span style={{ color: 'var(--muted)' }}>öffnen</span>
+          </span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <kbd style={kbdStyle}>Esc</kbd>
+            <span style={{ color: 'var(--muted)' }}>schließen</span>
+          </span>
         </div>
       </div>
     </div>
