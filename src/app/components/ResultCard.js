@@ -19,12 +19,12 @@ function getDescription(programme) {
 function getStatusBadge(programme) {
   const { urgency, daysLeft, isLaufend } = getDeadlineStatus(programme.antragsfrist);
 
-  if (isLaufend) return { label: 'Laufend', dotColor: 'var(--accent)', textColor: 'var(--text)' };
-  if (urgency === 'expired') return { label: 'Abgelaufen', dotColor: 'oklch(0.7 0.2 25)', textColor: 'var(--muted)' };
-  if (urgency === 'red') return { label: `${daysLeft}d`, dotColor: 'oklch(0.7 0.2 25)', textColor: 'var(--text)' };
-  if (urgency === 'yellow') return { label: `${daysLeft}d`, dotColor: 'oklch(0.85 0.16 85)', textColor: 'var(--text)' };
-  if (urgency === 'green') return { label: 'Offen', dotColor: 'var(--accent)', textColor: 'var(--text)' };
-  return { label: 'Offen', dotColor: 'var(--accent)', textColor: 'var(--text)' };
+  if (isLaufend) return { label: 'Laufend', dotColor: 'var(--accent)', textColor: 'var(--text)', pulse: true };
+  if (urgency === 'expired') return { label: 'Abgelaufen', dotColor: 'oklch(0.7 0.2 25)', textColor: 'var(--muted)', pulse: false };
+  if (urgency === 'red') return { label: `${daysLeft}d`, dotColor: 'oklch(0.7 0.2 25)', textColor: 'var(--text)', pulse: true };
+  if (urgency === 'yellow') return { label: `${daysLeft}d`, dotColor: 'oklch(0.85 0.16 85)', textColor: 'var(--text)', pulse: false };
+  if (urgency === 'green') return { label: 'Offen', dotColor: 'var(--accent)', textColor: 'var(--text)', pulse: true };
+  return { label: 'Offen', dotColor: 'var(--accent)', textColor: 'var(--text)', pulse: true };
 }
 
 export default function ResultCard({ programme, programm, index = 0 }) {
@@ -43,10 +43,10 @@ export default function ResultCard({ programme, programm, index = 0 }) {
   return (
     <Link
       href={`/programme/${p.id}`}
-      className="result-card animate-fade-up"
+      className="result-card animate-card-in"
       style={{
         '--card-accent': accentVar,
-        animationDelay: `${Math.min(index, 10) * 70}ms`,
+        animationDelay: `${Math.min(index, 12) * 60}ms`,
         position: 'relative',
         display: 'flex',
         flexDirection: 'column',
@@ -57,32 +57,90 @@ export default function ResultCard({ programme, programm, index = 0 }) {
         textDecoration: 'none',
         color: 'inherit',
         overflow: 'hidden',
-        transition: 'transform 0.25s cubic-bezier(0.4,0,0.2,1), border-color 0.25s, box-shadow 0.25s',
+        transition:
+          'transform 0.35s cubic-bezier(0.2,0.8,0.2,1), border-color 0.25s, box-shadow 0.35s, background 0.25s',
         height: '100%',
       }}
     >
       <style>{`
-        .result-card:hover {
-          transform: translateY(-4px) scale(1.005);
-          border-color: color-mix(in oklch, var(--card-accent) 45%, transparent);
-          box-shadow:
-            0 0 0 1px color-mix(in oklch, var(--card-accent) 15%, transparent),
-            0 16px 48px oklch(0 0 0 / 0.4);
+        @keyframes card-in {
+          from { opacity: 0; transform: translateY(18px) scale(0.985); }
+          to   { opacity: 1; transform: translateY(0) scale(1); }
         }
-        .result-card:hover .result-card__title { color: var(--card-accent); }
+        .animate-card-in {
+          animation: card-in 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+        }
+
+        @keyframes badge-pulse {
+          0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--card-accent) 45%, transparent); }
+          50%      { box-shadow: 0 0 0 6px color-mix(in oklch, var(--card-accent) 0%, transparent); }
+        }
+        .result-card__status--pulse .result-card__status-dot {
+          animation: badge-pulse 2s ease-in-out infinite;
+        }
+
+        .result-card__sheen {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          opacity: 0;
+          background: radial-gradient(
+            600px circle at var(--mx, 50%) var(--my, 0%),
+            color-mix(in oklch, var(--card-accent) 10%, transparent),
+            transparent 45%
+          );
+          transition: opacity 0.35s;
+        }
+        .result-card:hover .result-card__sheen { opacity: 1; }
+
+        .result-card:hover {
+          transform: translateY(-6px) scale(1.008);
+          border-color: color-mix(in oklch, var(--card-accent) 55%, transparent);
+          background: color-mix(in oklch, var(--card-accent) 3%, var(--bg2));
+          box-shadow:
+            0 0 0 1px color-mix(in oklch, var(--card-accent) 18%, transparent),
+            0 20px 52px oklch(0 0 0 / 0.45),
+            0 0 40px color-mix(in oklch, var(--card-accent) 12%, transparent);
+        }
+        .result-card:hover .result-card__title {
+          color: var(--card-accent);
+          transform: translateX(2px);
+        }
         .result-card:hover .result-card__arrow {
           background: var(--card-accent);
           color: var(--bg);
-          transform: translate(2px, -2px);
+          transform: translate(3px, -3px) rotate(-8deg);
+          box-shadow: 0 6px 18px color-mix(in oklch, var(--card-accent) 40%, transparent);
         }
         .result-card:hover .result-card__icon-area {
-          background: color-mix(in oklch, var(--card-accent) 18%, transparent);
+          background: color-mix(in oklch, var(--card-accent) 24%, transparent);
+          transform: scale(1.08) rotate(-4deg);
+        }
+        .result-card:hover .result-card__tag {
+          transform: translateY(-1px);
+        }
+        .result-card:hover .result-card__stat-value {
+          color: var(--card-accent);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .animate-card-in,
+          .result-card__status--pulse .result-card__status-dot {
+            animation: none !important;
+          }
+          .result-card,
+          .result-card * {
+            transition-duration: 0.01ms !important;
+          }
         }
       `}</style>
+      <span className="result-card__sheen" aria-hidden="true" />
 
       {/* Eyebrow row */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-        <span className={tagClass}>{art.label}</span>
+        <span className={`${tagClass} result-card__tag`} style={{ transition: 'transform 0.25s cubic-bezier(0.2,0.8,0.2,1)' }}>
+          {art.label}
+        </span>
         <span
           className="result-card__arrow"
           style={{
@@ -94,7 +152,7 @@ export default function ResultCard({ programme, programm, index = 0 }) {
             borderRadius: 10,
             background: 'var(--bg3)',
             color: 'var(--muted)',
-            transition: 'background 0.2s, color 0.2s, transform 0.2s',
+            transition: 'background 0.25s, color 0.25s, transform 0.3s cubic-bezier(0.2,0.8,0.2,1), box-shadow 0.3s',
           }}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -116,7 +174,8 @@ export default function ResultCard({ programme, programm, index = 0 }) {
           justifyContent: 'center',
           fontSize: 22,
           marginTop: 18,
-          transition: 'background 0.25s',
+          transition: 'background 0.3s, transform 0.4s cubic-bezier(0.2,0.8,0.2,1)',
+          transformOrigin: 'center',
         }}
         aria-hidden="true"
       >
@@ -133,7 +192,7 @@ export default function ResultCard({ programme, programm, index = 0 }) {
           color: 'var(--text)',
           marginTop: 16,
           lineHeight: 1.25,
-          transition: 'color 0.2s',
+          transition: 'color 0.25s, transform 0.3s cubic-bezier(0.2,0.8,0.2,1)',
         }}
       >
         {p.kurzname && p.kurzname !== p.name ? `${p.kurzname} – ${p.name}` : p.name}
@@ -184,6 +243,7 @@ export default function ResultCard({ programme, programm, index = 0 }) {
         </div>
 
         <span
+          className={`result-card__status${status.pulse ? ' result-card__status--pulse' : ''}`}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -198,12 +258,14 @@ export default function ResultCard({ programme, programm, index = 0 }) {
           }}
         >
           <span
+            className="result-card__status-dot"
             style={{
               width: 6,
               height: 6,
               borderRadius: '50%',
               background: status.dotColor,
               boxShadow: `0 0 6px ${status.dotColor}`,
+              '--card-accent': status.dotColor,
             }}
           />
           {status.label}
@@ -227,7 +289,7 @@ function Stat({ label, value }) {
       >
         {label}
       </span>
-      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{value}</span>
+      <span className="result-card__stat-value" style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', transition: 'color 0.25s' }}>{value}</span>
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 
-const SPINNER_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="13" fill="oklch(0.84 0.24 138)"/><text x="16" y="22" text-anchor="middle" font-family="sans-serif" font-weight="800" font-size="18" fill="oklch(0.09 0.018 260)">F<animateTransform attributeName="transform" type="rotate" from="0 16 16" to="360 16 16" dur="0.9s" repeatCount="indefinite"/></text></svg>`;
+const SPINNER_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#0f0f13"/><text x="16" y="23" text-anchor="middle" font-family="sans-serif" font-weight="800" font-size="20" fill="#34d399">F</text><circle cx="16" cy="16" r="13" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-dasharray="20 60" opacity="0.85"><animateTransform attributeName="transform" type="rotate" from="0 16 16" to="360 16 16" dur="0.9s" repeatCount="indefinite"/></circle></svg>`;
 
 const easeOut = (t) => 1 - Math.pow(1 - t, 3);
 
@@ -33,7 +33,7 @@ export default function PageLoader() {
   useEffect(() => {
     if (originalIcon.current) return;
     const link = document.querySelector('link[rel="icon"]');
-    originalIcon.current = link?.href || '/favicon.ico';
+    originalIcon.current = link?.href || '/icon.svg';
   }, []);
 
   useEffect(() => {
@@ -70,7 +70,7 @@ export default function PageLoader() {
       fadeRef.current = setTimeout(() => {
         setVisible(false);
         setProgress(0);
-        swapFavicon(originalIcon.current || '/favicon.ico');
+        swapFavicon(originalIcon.current || '/icon.svg');
         URL.revokeObjectURL(blobUrl);
       }, 220);
     }, 700);
@@ -80,7 +80,7 @@ export default function PageLoader() {
       if (finishRef.current) clearTimeout(finishRef.current);
       if (fadeRef.current) clearTimeout(fadeRef.current);
       URL.revokeObjectURL(blobUrl);
-      swapFavicon(originalIcon.current || '/favicon.ico');
+      swapFavicon(originalIcon.current || '/icon.svg');
     };
   }, [pathname, searchParams]);
 

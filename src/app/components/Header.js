@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import Button from './Button';
 
 const NAV_LINKS = [
   { href: '/', label: 'Entdecken' },
@@ -131,13 +130,6 @@ export default function Header() {
             </svg>
             <kbd>⌘K</kbd>
           </button>
-
-          <Button variant="ghost" disabled className="hidden sm:inline-flex">
-            Anmelden
-          </Button>
-          <Button variant="accent" href="/search">
-            Kostenlos starten
-          </Button>
         </div>
       </div>
     </header>

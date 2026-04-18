@@ -131,16 +131,19 @@ export default function LandingClient({ recommended = [] }) {
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="z.B. KfW Kredit, EXIST, Digitalbonus…"
                 style={{
-                  flex: 1,
+                  flex: '1 1 auto',
+                  minWidth: 0,
+                  width: '100%',
                   background: 'transparent',
                   border: 'none',
                   outline: 'none',
                   color: 'var(--text)',
                   caretColor: 'var(--accent)',
                   fontSize: 15,
-                  padding: '14px 0',
+                  padding: '14px 4px',
                   fontFamily: 'inherit',
                   boxShadow: 'none',
+                  textOverflow: 'ellipsis',
                 }}
               />
               <span
@@ -172,6 +175,18 @@ export default function LandingClient({ recommended = [] }) {
                           0 4px 24px oklch(0 0 0 / 0.3);
             }
             .search-bar:focus-within .search-icon { color: var(--accent); }
+            .search-bar input[type="text"] {
+              background: transparent !important;
+              border: none !important;
+              border-radius: 0 !important;
+              box-shadow: none !important;
+              padding: 14px 4px !important;
+              min-width: 0 !important;
+            }
+            .search-bar input[type="text"]:focus {
+              border: none !important;
+              box-shadow: none !important;
+            }
           `}</style>
 
           {/* Filter pills */}

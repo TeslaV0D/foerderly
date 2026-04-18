@@ -1,355 +1,416 @@
-// src/app/components/FilterSidebar.js
-// v6: Branchen as multi-select CustomSelect (5th filter, visually consistent)
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { BUNDESLAENDER, PHASEN, GROESSEN, BRANCHEN_OPTIONS } from '@/lib/constants';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { BUNDESLAENDER, PHASEN, GROESSEN, FOERDERARTEN, BRANCHEN_OPTIONS } from '@/lib/constants';
 
-function CustomSelect({ label, value, options, onChange, placeholder = 'Alle' }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
+const STICKY_TOP = 73;
 
-  useEffect(() => {
-    function handleClick(e) {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
-    }
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, []);
-
-  const selectedLabel = options.find(o => o.value === value)?.label || placeholder;
-
-  return (
-    <div ref={ref} className="relative">
-      <label className="block text-[11px] font-medium uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>
-        {label}
-      </label>
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-sm rounded-xl transition-all text-left cursor-pointer"
-        style={{
-          background: 'var(--bg-elevated)',
-          border: open ? '1px solid var(--accent-solid)' : '1px solid var(--border-default)',
-          color: value ? 'var(--text-primary)' : 'var(--text-muted)',
-          boxShadow: open ? '0 0 0 3px var(--accent-muted)' : 'none',
-        }}
-      >
-        <span className="truncate">{selectedLabel}</span>
-        <svg
-          className={`w-4 h-4 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
-          style={{ color: 'var(--text-muted)' }}
-          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-
-      {open && (
-        <div
-          className="absolute z-50 mt-1.5 w-full max-h-64 overflow-y-auto rounded-xl py-1.5 shadow-xl"
-          style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)' }}
-        >
-          {options.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => { onChange(opt.value); setOpen(false); }}
-              className="w-full text-left px-3 py-2 text-sm transition-colors cursor-pointer"
-              style={{
-                color: opt.value === value ? 'var(--accent-text)' : 'var(--text-secondary)',
-                background: opt.value === value ? 'var(--accent-muted)' : 'transparent',
-              }}
-              onMouseEnter={(e) => {
-                if (opt.value !== value) e.target.style.background = 'var(--bg-elevated)';
-              }}
-              onMouseLeave={(e) => {
-                if (opt.value !== value) e.target.style.background = 'transparent';
-              }}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/**
- * Multi-Select dropdown for Branchen
- * Looks identical to CustomSelect but allows multiple selections
- */
-function MultiSelect({ label, selected = [], options, onChange, placeholder = 'Alle Branchen' }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
+export default function FilterSidebar({ currentFilters, total }) {
+  const router = useRouter();
+  const [localQ, setLocalQ] = useState(currentFilters.q || '');
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
-    function handleClick(e) {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
-    }
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, []);
+    setLocalQ(currentFilters.q || '');
+  }, [currentFilters.q]);
 
-  const selectedCount = selected.length;
-  const displayLabel = selectedCount === 0
-    ? placeholder
-    : selectedCount === 1
-      ? options.find(o => o.value === selected[0])?.label || placeholder
-      : `${selectedCount} ausgewählt`;
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [mobileOpen]);
 
-  function toggleValue(val) {
-    if (!val) {
-      onChange([]);
-      return;
+  const selectedBranchen = (currentFilters.branchen || '').split(',').filter(Boolean);
+
+  function applyFilters(overrides = {}) {
+    const params = new URLSearchParams();
+    const merged = { ...currentFilters, ...overrides, page: '1' };
+    for (const [key, val] of Object.entries(merged)) {
+      if (val && key !== 'page') params.set(key, val);
     }
-    const newSelected = selected.includes(val)
-      ? selected.filter(s => s !== val)
-      : [...selected, val];
-    onChange(newSelected);
+    router.push(`/search?${params.toString()}`);
   }
 
-  return (
-    <div ref={ref} className="relative">
-      <label className="block text-[11px] font-medium uppercase tracking-wider mb-1.5" style={{ color: 'var(--text-muted)' }}>
-        {label}
-        {selectedCount > 0 && (
-          <span
-            className="ml-1.5 inline-flex items-center justify-center text-[10px] px-1.5 py-0.5 rounded-md font-medium"
-            style={{ background: 'var(--accent-muted)', color: 'var(--accent-text)' }}
-          >
-            {selectedCount}
-          </span>
-        )}
-      </label>
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-sm rounded-xl transition-all text-left cursor-pointer"
-        style={{
-          background: 'var(--bg-elevated)',
-          border: open ? '1px solid var(--accent-solid)' : selectedCount > 0 ? '1px solid rgba(52,211,153,0.25)' : '1px solid var(--border-default)',
-          color: selectedCount > 0 ? 'var(--text-primary)' : 'var(--text-muted)',
-          boxShadow: open ? '0 0 0 3px var(--accent-muted)' : 'none',
-        }}
-      >
-        <span className="truncate">{displayLabel}</span>
-        <svg
-          className={`w-4 h-4 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
-          style={{ color: 'var(--text-muted)' }}
-          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
+  function handleSearch(e) {
+    e?.preventDefault();
+    applyFilters({ q: localQ });
+    setMobileOpen(false);
+  }
 
-      {open && (
-        <div
-          className="absolute z-50 mt-1.5 w-full max-h-64 overflow-y-auto rounded-xl py-1.5 shadow-xl"
-          style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)' }}
-        >
-          {/* "Alle" reset option */}
-          <button
-            type="button"
-            onClick={() => { onChange([]); setOpen(false); }}
-            className="w-full text-left px-3 py-2 text-sm transition-colors cursor-pointer"
-            style={{
-              color: selectedCount === 0 ? 'var(--accent-text)' : 'var(--text-secondary)',
-              background: selectedCount === 0 ? 'var(--accent-muted)' : 'transparent',
-            }}
-            onMouseEnter={(e) => {
-              if (selectedCount > 0) e.target.style.background = 'var(--bg-elevated)';
-            }}
-            onMouseLeave={(e) => {
-              if (selectedCount > 0) e.target.style.background = 'transparent';
-            }}
-          >
-            {placeholder}
+  function toggleBranche(slug) {
+    const current = new Set(selectedBranchen);
+    if (current.has(slug)) current.delete(slug);
+    else current.add(slug);
+    applyFilters({ branchen: [...current].join(','), branche: '' });
+  }
+
+  function resetAll() {
+    setLocalQ('');
+    router.push('/search');
+    setMobileOpen(false);
+  }
+
+  const activeCount = Object.entries(currentFilters)
+    .filter(([k, v]) => v && !['q', 'sortBy', 'sortDir', 'datenqualitaet', 'page'].includes(k))
+    .length;
+
+  const sortValue = currentFilters.sortBy && currentFilters.sortDir
+    ? `${currentFilters.sortBy}_${currentFilters.sortDir}`
+    : '';
+
+  const panelBody = (
+    <>
+      <form onSubmit={handleSearch}>
+        <Label>Suche</Label>
+        <div className="filter-search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            value={localQ}
+            onChange={(e) => setLocalQ(e.target.value)}
+            placeholder="Programm, Stichwort…"
+            aria-label="Suche"
+          />
+          <button type="submit" className="btn-accent filter-search__submit" aria-label="Suchen">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 5l7 7-7 7M5 12h14" />
+            </svg>
           </button>
+        </div>
+      </form>
 
-          {options.map((opt) => {
-            const isSelected = selected.includes(opt.value);
+      <FilterGroup>
+        <Label>Sortierung</Label>
+        <Select
+          value={sortValue}
+          onChange={(v) => {
+            const [sortBy, sortDir] = v ? v.split('_') : ['', ''];
+            applyFilters({ sortBy, sortDir });
+          }}
+          options={[
+            { value: '', label: 'Standard' },
+            { value: 'volumen_desc', label: 'Höchste Förderung' },
+            { value: 'volumen_asc', label: 'Niedrigste Förderung' },
+            { value: 'name_asc', label: 'Name A–Z' },
+            { value: 'aktualisiert_desc', label: 'Neueste zuerst' },
+          ]}
+        />
+      </FilterGroup>
+
+      <FilterGroup>
+        <Label>Förderart</Label>
+        <Select
+          value={currentFilters.foerderart}
+          onChange={(v) => applyFilters({ foerderart: v })}
+          options={[
+            { value: '', label: 'Alle Arten' },
+            ...Object.entries(FOERDERARTEN).map(([k, v]) => ({ value: k, label: `${v.emoji} ${v.label}` })),
+          ]}
+        />
+      </FilterGroup>
+
+      <FilterGroup>
+        <Label>Bundesland</Label>
+        <Select
+          value={currentFilters.bundesland}
+          onChange={(v) => applyFilters({ bundesland: v })}
+          options={[
+            { value: '', label: 'Alle Bundesländer' },
+            ...Object.entries(BUNDESLAENDER).map(([k, v]) => ({ value: k, label: v })),
+          ]}
+        />
+      </FilterGroup>
+
+      <FilterGroup>
+        <Label>Phase</Label>
+        <Select
+          value={currentFilters.phase}
+          onChange={(v) => applyFilters({ phase: v })}
+          options={[
+            { value: '', label: 'Alle Phasen' },
+            ...Object.entries(PHASEN).map(([k, v]) => ({ value: k, label: v })),
+          ]}
+        />
+      </FilterGroup>
+
+      <FilterGroup>
+        <Label>Unternehmensgröße</Label>
+        <Select
+          value={currentFilters.groesse}
+          onChange={(v) => applyFilters({ groesse: v })}
+          options={[
+            { value: '', label: 'Alle Größen' },
+            ...Object.entries(GROESSEN).map(([k, v]) => ({ value: k, label: v })),
+          ]}
+        />
+      </FilterGroup>
+
+      <FilterGroup>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+          <Label style={{ margin: 0 }}>Branchen</Label>
+          {selectedBranchen.length > 0 && <span className="pill-count">{selectedBranchen.length}</span>}
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {BRANCHEN_OPTIONS.filter((b) => b.slug !== 'branchenuebergreifend').map((b) => {
+            const isSelected = selectedBranchen.includes(b.slug);
             return (
               <button
-                key={opt.value}
+                key={b.slug}
                 type="button"
-                onClick={() => toggleValue(opt.value)}
-                className="w-full text-left px-3 py-2 text-sm transition-colors cursor-pointer flex items-center gap-2"
-                style={{
-                  color: isSelected ? 'var(--accent-text)' : 'var(--text-secondary)',
-                  background: isSelected ? 'var(--accent-muted)' : 'transparent',
-                }}
-                onMouseEnter={(e) => {
-                  if (!isSelected) e.target.style.background = 'var(--bg-elevated)';
-                }}
-                onMouseLeave={(e) => {
-                  if (!isSelected) e.target.style.background = isSelected ? 'var(--accent-muted)' : 'transparent';
-                }}
+                onClick={() => toggleBranche(b.slug)}
+                className={`pill${isSelected ? ' pill-active' : ''}`}
+                style={{ fontSize: 12, padding: '6px 12px' }}
               >
-                <span
-                  className="w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0"
-                  style={{
-                    borderColor: isSelected ? 'var(--accent-text)' : 'var(--border-default)',
-                    background: isSelected ? 'var(--accent-text)' : 'transparent',
-                  }}
-                >
-                  {isSelected && (
-                    <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="#0f0f13" strokeWidth={3}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  )}
-                </span>
-                <span className="truncate">{opt.label}</span>
+                <span className="pill-dot" />
+                {b.label}
               </button>
             );
           })}
         </div>
-      )}
-    </div>
-  );
-}
+      </FilterGroup>
 
-export default function FilterSidebar({ filters, onChange, onSearch, loading }) {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const activeFilterCount = Object.entries(filters).filter(([k, v]) => v && k !== 'q').length;
-
-  function handleChange(key, value) {
-    onChange({ ...filters, [key]: value || '' });
-  }
-
-  // Parse branchen from comma-separated string
-  const selectedBranchen = (filters.branchen || filters.branche || '').split(',').filter(Boolean);
-
-  function handleBranchenChange(newSelected) {
-    const value = newSelected.join(',');
-    onChange({ ...filters, branchen: value, branche: '' });
-  }
-
-  const bundeslandOptions = [
-    { value: '', label: 'Alle Bundesländer' },
-    ...Object.entries(BUNDESLAENDER).map(([key, name]) => ({ value: key, label: name })),
-  ];
-
-  const phasenOptions = [
-    { value: '', label: 'Alle Phasen' },
-    ...Object.entries(PHASEN).map(([key, label]) => ({ value: key, label })),
-  ];
-
-  const groessenOptions = [
-    { value: '', label: 'Alle Größen' },
-    ...Object.entries(GROESSEN).map(([key, label]) => ({ value: key, label })),
-  ];
-
-  const branchenSelectOptions = BRANCHEN_OPTIONS
-    .filter(b => b.slug !== 'branchenuebergreifend')
-    .map(b => ({ value: b.slug, label: b.label }));
-
-  const filterContent = (
-    <div className="space-y-4">
-      <CustomSelect label="Bundesland" value={filters.bundesland} options={bundeslandOptions}
-        onChange={(v) => handleChange('bundesland', v)} placeholder="Alle Bundesländer" />
-      <CustomSelect label="Phase" value={filters.phase} options={phasenOptions}
-        onChange={(v) => handleChange('phase', v)} placeholder="Alle Phasen" />
-      <CustomSelect label="Unternehmensgröße" value={filters.groesse} options={groessenOptions}
-        onChange={(v) => handleChange('groesse', v)} placeholder="Alle Größen" />
-      <MultiSelect
-        label="Branchen"
-        selected={selectedBranchen}
-        options={branchenSelectOptions}
-        onChange={handleBranchenChange}
-        placeholder="Alle Branchen"
-      />
-
-      {activeFilterCount > 0 && (
+      {activeCount > 0 && (
         <button
-          onClick={() => onChange({ bundesland: '', phase: '', groesse: '', branchen: '', branche: '', q: filters.q })}
-          className="w-full text-xs py-2 rounded-xl transition-all cursor-pointer"
-          style={{ color: 'var(--text-muted)', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)' }}
+          onClick={resetAll}
+          className="btn-ghost"
+          style={{ width: '100%', marginTop: 18, justifyContent: 'center' }}
         >
-          Filter zurücksetzen ({activeFilterCount})
+          Alle Filter zurücksetzen ({activeCount})
         </button>
       )}
-    </div>
+    </>
   );
 
   return (
     <>
-      {/* ─── Desktop Sidebar – sticky ─── */}
-      <aside className="hidden lg:block w-64 shrink-0">
+      {/* Desktop: sticky sidebar */}
+      <aside className="filter-sidebar-desktop">
         <div
-          className="sticky rounded-2xl p-5"
+          className="filter-sidebar-desktop__panel"
           style={{
-            top: 'calc(var(--header-height, 57px) + 1.5rem)',
-            maxHeight: 'calc(100vh - var(--header-height, 57px) - 3rem)',
+            position: 'sticky',
+            top: STICKY_TOP,
+            maxHeight: `calc(100vh - ${STICKY_TOP + 16}px)`,
             overflowY: 'auto',
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border-default)',
+            background: 'var(--bg2)',
+            border: '1.5px solid var(--border2)',
+            borderRadius: 'var(--radius)',
+            padding: 20,
           }}
         >
-          <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
-            Filter
-          </h3>
-          {filterContent}
+          {panelBody}
         </div>
       </aside>
 
-      {/* ─── Mobile ─── */}
-      <div className="lg:hidden mb-4">
-        <div
-          className="rounded-2xl p-4 mb-3"
-          style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)' }}
+      {/* Mobile: trigger button */}
+      <div className="filter-sidebar-mobile-trigger">
+        <button
+          type="button"
+          onClick={() => setMobileOpen(true)}
+          className="btn-ghost"
+          style={{ width: '100%', justifyContent: 'flex-start' }}
         >
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={filters.q}
-              onChange={(e) => handleChange('q', e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && onSearch()}
-              placeholder="Förderprogramm suchen..."
-              className="flex-1 min-w-0 px-3 py-2.5 text-sm rounded-xl cursor-text"
-              style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', color: 'var(--text-primary)' }}
-            />
-            <button
-              onClick={onSearch}
-              disabled={loading}
-              className="px-5 py-2.5 font-medium text-sm rounded-xl transition-all shrink-0 disabled:opacity-50 cursor-pointer"
-              style={{ background: 'linear-gradient(135deg, var(--accent-start), var(--accent-end))', color: '#0f0f13' }}
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </button>
-          </div>
-
-          <button
-            onClick={() => setMobileOpen(!mobileOpen)}
-            className="mt-3 flex items-center gap-2 text-sm transition-colors cursor-pointer"
-            style={{ color: 'var(--text-secondary)' }}
-          >
-            <svg className={`w-4 h-4 transition-transform ${mobileOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-            </svg>
-            Filter {activeFilterCount > 0 ? `(${activeFilterCount} aktiv)` : 'anzeigen'}
-          </button>
-        </div>
-
-        {mobileOpen && (
-          <div
-            className="rounded-2xl p-4 mb-3 animate-fade-up"
-            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-default)' }}
-          >
-            {filterContent}
-            <button
-              onClick={() => { onSearch(); setMobileOpen(false); }}
-              className="mt-4 w-full py-2.5 text-sm font-medium rounded-xl cursor-pointer"
-              style={{ background: 'linear-gradient(135deg, var(--accent-start), var(--accent-end))', color: '#0f0f13' }}
-            >
-              Filter anwenden
-            </button>
-          </div>
-        )}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: 4 }}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+          </svg>
+          Filter & Sortierung{activeCount > 0 ? ` (${activeCount})` : ''}
+          {typeof total === 'number' && (
+            <span style={{ marginLeft: 'auto', color: 'var(--muted)', fontSize: 12 }}>{total} Treffer</span>
+          )}
+        </button>
       </div>
+
+      {/* Mobile: drawer */}
+      {mobileOpen && (
+        <div
+          className="filter-sidebar-drawer-wrap"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Filter und Sortierung"
+        >
+          <div
+            className="filter-sidebar-backdrop"
+            onClick={() => setMobileOpen(false)}
+            aria-hidden="true"
+          />
+          <div className="filter-sidebar-drawer">
+            <div className="filter-sidebar-drawer__header">
+              <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.3px', margin: 0 }}>
+                Filter & Sortierung
+              </h2>
+              <button
+                type="button"
+                onClick={() => setMobileOpen(false)}
+                aria-label="Schließen"
+                className="filter-sidebar-drawer__close"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M6 18L18 6" />
+                </svg>
+              </button>
+            </div>
+            <div className="filter-sidebar-drawer__body">{panelBody}</div>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        .filter-sidebar-desktop { display: none; }
+        .filter-sidebar-mobile-trigger { display: block; margin-bottom: 16px; }
+        @media (min-width: 1024px) {
+          .filter-sidebar-desktop { display: block; }
+          .filter-sidebar-mobile-trigger { display: none; }
+        }
+
+        .filter-search {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          background: var(--bg3);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-md);
+          padding: 4px 4px 4px 12px;
+          transition: border-color 0.2s, box-shadow 0.2s;
+          color: var(--muted);
+        }
+        .filter-search:focus-within {
+          border-color: color-mix(in oklch, var(--accent) 60%, transparent);
+          box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 10%, transparent);
+          color: var(--accent);
+        }
+        .filter-search input[type="text"] {
+          flex: 1 1 auto !important;
+          min-width: 0 !important;
+          width: 100% !important;
+          background: transparent !important;
+          border: none !important;
+          border-radius: 0 !important;
+          box-shadow: none !important;
+          color: var(--text) !important;
+          caret-color: var(--accent) !important;
+          font-size: 13px !important;
+          padding: 8px 4px !important;
+          outline: none !important;
+          font-family: inherit;
+        }
+        .filter-search input[type="text"]:focus {
+          border: none !important;
+          box-shadow: none !important;
+        }
+        .filter-search__submit {
+          padding: 7px 10px !important;
+          border-radius: 8px !important;
+          flex-shrink: 0;
+        }
+
+        .filter-sidebar-drawer-wrap {
+          position: fixed;
+          inset: 0;
+          z-index: 50;
+          display: flex;
+          justify-content: flex-end;
+        }
+        .filter-sidebar-backdrop {
+          position: absolute;
+          inset: 0;
+          background: color-mix(in oklch, var(--bg) 65%, transparent);
+          backdrop-filter: blur(4px);
+          -webkit-backdrop-filter: blur(4px);
+          animation: fadeIn 0.2s ease-out both;
+        }
+        .filter-sidebar-drawer {
+          position: relative;
+          width: min(420px, 100vw);
+          height: 100vh;
+          max-height: 100vh;
+          background: var(--bg2);
+          border-left: 1px solid var(--border2);
+          display: flex;
+          flex-direction: column;
+          animation: slideIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+        .filter-sidebar-drawer__header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 16px 20px;
+          border-bottom: 1px solid var(--border2);
+          background: var(--bg2);
+          flex-shrink: 0;
+        }
+        .filter-sidebar-drawer__close {
+          background: var(--bg3);
+          border: 1px solid var(--border2);
+          border-radius: 10px;
+          width: 36px;
+          height: 36px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          color: var(--muted);
+          transition: color 0.18s, border-color 0.18s;
+        }
+        .filter-sidebar-drawer__close:hover {
+          color: var(--text);
+          border-color: var(--border);
+        }
+        .filter-sidebar-drawer__body {
+          padding: 20px;
+          overflow-y: auto;
+          flex: 1 1 auto;
+        }
+      `}</style>
     </>
+  );
+}
+
+function FilterGroup({ children }) {
+  return <div style={{ marginTop: 18 }}>{children}</div>;
+}
+
+function Label({ children, style }) {
+  return (
+    <label
+      style={{
+        display: 'block',
+        fontSize: 11,
+        fontWeight: 600,
+        textTransform: 'uppercase',
+        letterSpacing: '0.06em',
+        color: 'var(--muted)',
+        marginBottom: 8,
+        ...style,
+      }}
+    >
+      {children}
+    </label>
+  );
+}
+
+function Select({ value, options, onChange }) {
+  return (
+    <select
+      value={value || ''}
+      onChange={(e) => onChange(e.target.value)}
+      style={{
+        width: '100%',
+        padding: '10px 12px',
+        fontSize: 13,
+        cursor: 'pointer',
+      }}
+    >
+      {options.map((opt) => (
+        <option key={opt.value} value={opt.value}>
+          {opt.label}
+        </option>
+      ))}
+    </select>
   );
 }

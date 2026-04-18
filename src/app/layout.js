@@ -58,14 +58,6 @@ export const metadata = {
     },
   },
 
-  icons: {
-    icon: [
-      { url: '/favicon.ico', sizes: '32x32' },
-      { url: '/favicon.svg', type: 'image/svg+xml' },
-    ],
-    apple: '/apple-touch-icon.png',
-  },
-
   metadataBase: new URL('https://foerderly.com'),
   authors: [{ name: 'Förderly' }],
   creator: 'Förderly',
