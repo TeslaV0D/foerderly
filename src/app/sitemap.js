@@ -22,6 +22,12 @@ export default async function sitemap() {
       priority: 0.9,
     },
     {
+      url: `${BASE_URL}/blog`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.8,
+    },
+    {
       url: `${BASE_URL}/quellen`,
       lastModified: new Date(),
       changeFrequency: 'monthly',
@@ -49,6 +55,7 @@ export default async function sitemap() {
 
   // ─── Dynamische Programme-Detail-Seiten ───
   let detailPages = [];
+  let blogPages = [];
 
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -75,10 +82,26 @@ export default async function sitemap() {
           priority: 0.8,
         }));
       }
+
+      const { data: posts } = await supabase
+        .from('blog_posts')
+        .select('slug, updated_at, published_at')
+        .eq('status', 'published')
+        .order('published_at', { ascending: false })
+        .limit(2000);
+
+      if (posts) {
+        blogPages = posts.map((p) => ({
+          url: `${BASE_URL}/blog/${p.slug}`,
+          lastModified: new Date(p.updated_at || p.published_at || Date.now()),
+          changeFrequency: 'weekly',
+          priority: 0.7,
+        }));
+      }
     }
   } catch (err) {
     console.error('[Sitemap] Supabase-Fehler:', err.message);
   }
 
-  return [...staticPages, ...detailPages];
+  return [...staticPages, ...detailPages, ...blogPages];
 }

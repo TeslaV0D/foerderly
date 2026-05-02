@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Header from './Header';
 import Footer from './Footer';
 import ResultCard from './ResultCard';
+import BlogCard from './BlogCard';
 
 const QUICK_FILTERS = [
   { label: 'Alle', href: '/search' },
@@ -17,7 +18,7 @@ const QUICK_FILTERS = [
   { label: 'EU-Programme', href: '/search?bundesland=BUND' },
 ];
 
-export default function LandingClient({ recommended = [] }) {
+export default function LandingClient({ recommended = [], latestPosts = [] }) {
   const router = useRouter();
   const [q, setQ] = useState('');
 
@@ -256,6 +257,61 @@ export default function LandingClient({ recommended = [] }) {
             >
               {recommended.map((p, i) => (
                 <ResultCard key={p.id} programme={p} index={i} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Latest blog posts */}
+        {latestPosts.length > 0 && (
+          <section style={{ marginBottom: 64 }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: 24,
+              }}
+            >
+              <h2
+                style={{
+                  fontSize: 22,
+                  fontWeight: 700,
+                  letterSpacing: '-0.5px',
+                  color: 'var(--text)',
+                }}
+              >
+                Aktuelle Beiträge
+              </h2>
+              <Link
+                href="/blog"
+                className="section-link"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  fontSize: 13,
+                  color: 'var(--muted)',
+                  textDecoration: 'none',
+                  transition: 'color 0.2s, gap 0.2s',
+                }}
+              >
+                Alle Beiträge anschauen
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gap: 20,
+                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+              }}
+            >
+              {latestPosts.map((p, i) => (
+                <BlogCard key={p.id} post={p} index={i} />
               ))}
             </div>
           </section>

@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 const NAV_LINKS = [
   { href: '/', label: 'Entdecken' },
   { href: '/search', label: 'Programme' },
+  { href: '/blog', label: 'Blog' },
   { href: '/quellen', label: 'Quellen' },
 ];
 
@@ -33,6 +34,7 @@ export default function Header() {
   const isLinkActive = (href) => {
     if (href === '/') return pathname === '/';
     if (href === '/search') return pathname.startsWith('/search');
+    if (href === '/blog') return pathname.startsWith('/blog');
     if (href === '/quellen') return pathname.startsWith('/quellen');
     return pathname === href;
   };
